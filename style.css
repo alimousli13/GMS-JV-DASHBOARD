@@ -495,3 +495,13 @@ tfoot td {
   .in-savebar-actions .btn { flex: 1; }
 }
 /* ===== END: Enter Data page ===== */
+
+/* ===== START: Schedule section ===== */
+.sched-filters { display: flex; flex-wrap: wrap; align-items: end; gap: var(--space-md); margin: var(--space-sm) 0 var(--space-md); }
+.sched-filters label { display: grid; gap: 0.2rem; font-size: 0.8rem; font-weight: 600; color: var(--color-muted); }
+.sched-filters select { font: inherit; font-size: 0.95rem; padding: 0.4rem 0.5rem; border: 1px solid var(--color-border); border-radius: 8px; background: #fff; color: var(--color-text); min-width: 10rem; }
+.sched-count { font-size: 0.85rem; color: var(--color-muted); margin-left: auto; }
+.sched-table td { white-space: nowrap; }
+.sched-table tr.sched-newday td { border-top: 2px solid var(--color-border); }
+.sched-hl { font-weight: 700; color: var(--color-navy); }
+/* ===== END: Schedule section ===== */

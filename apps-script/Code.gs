@@ -53,7 +53,6 @@ var FIELDS = [
   { key: 'setup_insurance_refund',  sheet: 'Setup',   cell: 'B25', type: 'money',   panel: 'prices',  group: 'Insurance & overhead', label: 'Expected insurance reimbursement' },
   { key: 'setup_other_season_fixed',sheet: 'Setup',   cell: 'B26', type: 'money',   panel: 'prices',  group: 'Insurance & overhead', label: 'Other season fixed costs' },
 
-  { key: 'setup_first_tuesday',     sheet: 'Setup',   cell: 'B28', type: 'date',    panel: 'prices',  group: 'Calendar',             label: 'First Tuesday of the season' },
 
   { key: 'fund_sponsor_fees',       sheet: 'Funding', cell: 'B8',  type: 'money',   panel: 'funding', group: 'Team fees received (running totals)', label: 'Sponsor payments toward team fees' },
   { key: 'fund_player_fees',        sheet: 'Funding', cell: 'B9',  type: 'money',   panel: 'funding', group: 'Team fees received (running totals)', label: 'Coach/Player payments' },
@@ -185,6 +184,7 @@ function buildPayload_(ss) {
   var days = [];
   for (var n = 0; n < DAY_COUNT; n++) {
     if (dv[DAY_INFO.week - 1][n] === '' || dv[DAY_INFO.week - 1][n] === null) continue;
+    if (!Number(dv[DAY_INFO.games - 1][n])) continue; // no games scheduled that day
     var values = {};
     DAILY_FIELDS.forEach(function (f) { values[f.field] = out_(f.type, dv[f.row - 1][n], tz); });
     days.push({
@@ -205,11 +205,21 @@ function buildPayload_(ss) {
     ok: true,
     serverTime: Utilities.formatDate(new Date(), tz, 'MMM d, yyyy h:mm a'),
     outputs: readWeb_(ss),
+    schedule: readSchedule_(ss),
     fields: fields,
     rentals: rentals,
     days: days,
     dailyFields: DAILY_FIELDS.map(function (f) { return { field: f.field, label: f.label, type: f.type, group: f.group }; })
   };
+}
+
+function readSchedule_(ss) {
+  var sh = ss.getSheetByName('Schedule');
+  if (!sh || sh.getLastRow() < 2) return [];
+  var rows = sh.getRange(2, 1, sh.getLastRow() - 1, 9).getDisplayValues();
+  return rows.filter(function (r) { return r[0] !== ''; }).map(function (r) {
+    return { week: r[0], day: r[1], time: r[2], court: r[3], venue: r[4], home: r[5], away: r[6], date: r[8] };
+  });
 }
 
 function readWeb_(ss) {
@@ -297,4 +307,130 @@ function colLetter_(c) {
 
 function json_(obj) {
   return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON);
+}
+
+
+/* =====================================================================
+   ONE-TIME SCHEDULE UPDATE — run updateSchedule() from the Apps Script editor.
+   Safe to run more than once. Undo anytime with File → Version history.
+   - Rewrites the Schedule tab from the updated schedule (adds a Date column I).
+   - Daily dates now come from the Schedule (Week 4 starts Dec 1 after Thanksgiving).
+   - Rent is split by the games actually played at each venue, so a day that
+     uses both venues (Wed Dec 9) gets the right share of each venue's rent.
+   - "Scheduled game days" counts only days that have games (Week 5 has no Thursday).
+   ===================================================================== */
+// [week, date, day, time, venue, court, home, away] — from Gainesville_JV_League_Open_Updated.xlsx
+var SCHEDULE_2026 = [
+  [1, "2026-11-03", "Tue", "6:00 PM", "Alachua Sports Complex", "Court 1", "Lincoln", "Oak View"],
+  [1, "2026-11-03", "Tue", "6:00 PM", "Alachua Sports Complex", "Court 2", "PK2", "Lincoln 2"],
+  [1, "2026-11-03", "Tue", "7:00 PM", "Alachua Sports Complex", "Court 1", "Kanapaha", "Westside"],
+  [1, "2026-11-03", "Tue", "7:00 PM", "Alachua Sports Complex", "Court 2", "Howard Bishop", "Open"],
+  [1, "2026-11-04", "Wed", "6:00 PM", "Abundant Grace", "Main Court", "Westwood", "Forge Elite"],
+  [1, "2026-11-04", "Wed", "7:00 PM", "Abundant Grace", "Main Court", "PK", "Fort Clarke"],
+  [1, "2026-11-05", "Thu", "6:00 PM", "Alachua Sports Complex", "Court 1", "Oak View", "Lincoln 2"],
+  [1, "2026-11-05", "Thu", "6:00 PM", "Alachua Sports Complex", "Court 2", "PK2", "Kanapaha"],
+  [1, "2026-11-05", "Thu", "7:00 PM", "Alachua Sports Complex", "Court 1", "Lincoln", "Open"],
+  [1, "2026-11-05", "Thu", "7:00 PM", "Alachua Sports Complex", "Court 2", "Westside", "Howard Bishop"],
+  [1, "2026-11-06", "Fri", "6:00 PM", "Abundant Grace", "Main Court", "Westwood", "Fort Clarke"],
+  [1, "2026-11-06", "Fri", "7:00 PM", "Abundant Grace", "Main Court", "PK", "Forge Elite"],
+  [2, "2026-11-10", "Tue", "6:00 PM", "Alachua Sports Complex", "Court 1", "Kanapaha", "Oak View"],
+  [2, "2026-11-10", "Tue", "6:00 PM", "Alachua Sports Complex", "Court 2", "Lincoln", "Fort Clarke"],
+  [2, "2026-11-10", "Tue", "7:00 PM", "Alachua Sports Complex", "Court 1", "Howard Bishop", "PK2"],
+  [2, "2026-11-10", "Tue", "7:00 PM", "Alachua Sports Complex", "Court 2", "Westwood", "Open"],
+  [2, "2026-11-11", "Wed", "6:00 PM", "Abundant Grace", "Main Court", "Westside", "Forge Elite"],
+  [2, "2026-11-11", "Wed", "7:00 PM", "Abundant Grace", "Main Court", "PK", "Lincoln 2"],
+  [2, "2026-11-12", "Thu", "6:00 PM", "Alachua Sports Complex", "Court 1", "Lincoln 2", "Fort Clarke"],
+  [2, "2026-11-12", "Thu", "6:00 PM", "Alachua Sports Complex", "Court 2", "PK2", "Westwood"],
+  [2, "2026-11-12", "Thu", "7:00 PM", "Alachua Sports Complex", "Court 1", "Kanapaha", "Howard Bishop"],
+  [2, "2026-11-12", "Thu", "7:00 PM", "Alachua Sports Complex", "Court 2", "Oak View", "Open"],
+  [2, "2026-11-13", "Fri", "6:00 PM", "Abundant Grace", "Main Court", "Lincoln", "Forge Elite"],
+  [2, "2026-11-13", "Fri", "7:00 PM", "Abundant Grace", "Main Court", "PK", "Westside"],
+  [3, "2026-11-17", "Tue", "6:00 PM", "Alachua Sports Complex", "Court 1", "Lincoln", "Westwood"],
+  [3, "2026-11-17", "Tue", "7:00 PM", "Alachua Sports Complex", "Court 2", "Kanapaha", "Fort Clarke"],
+  [3, "2026-11-17", "Tue", "7:00 PM", "Alachua Sports Complex", "Court 1", "PK2", "Open"],
+  [3, "2026-11-17", "Tue", "6:00 PM", "Alachua Sports Complex", "Court 2", "Howard Bishop", "Forge Elite"],
+  [3, "2026-11-18", "Wed", "6:00 PM", "Abundant Grace", "Main Court", "PK2", "Westside"],
+  [3, "2026-11-18", "Wed", "7:00 PM", "Abundant Grace", "Main Court", "PK", "Oak View"],
+  [3, "2026-11-19", "Thu", "6:00 PM", "Alachua Sports Complex", "Court 1", "Kanapaha", "Lincoln 2"],
+  [3, "2026-11-19", "Thu", "6:00 PM", "Alachua Sports Complex", "Court 2", "Oak View", "Westwood"],
+  [3, "2026-11-19", "Thu", "7:00 PM", "Alachua Sports Complex", "Court 1", "Fort Clarke", "Howard Bishop"],
+  [3, "2026-11-19", "Thu", "7:00 PM", "Alachua Sports Complex", "Court 2", "Forge Elite", "Open"],
+  [3, "2026-11-20", "Fri", "6:00 PM", "Abundant Grace", "Main Court", "Westside", "Lincoln 2"],
+  [3, "2026-11-20", "Fri", "7:00 PM", "Abundant Grace", "Main Court", "PK", "Lincoln"],
+  [4, "2026-12-01", "Tue", "6:00 PM", "Alachua Sports Complex", "Court 1", "PK2", "Lincoln"],
+  [4, "2026-12-01", "Tue", "6:00 PM", "Alachua Sports Complex", "Court 2", "Kanapaha", "Westwood"],
+  [4, "2026-12-01", "Tue", "7:00 PM", "Alachua Sports Complex", "Court 1", "Forge Elite", "Lincoln 2"],
+  [4, "2026-12-01", "Tue", "7:00 PM", "Alachua Sports Complex", "Court 2", "Fort Clarke", "Open"],
+  [4, "2026-12-02", "Wed", "6:00 PM", "Abundant Grace", "Main Court", "Oak View", "Westside"],
+  [4, "2026-12-02", "Wed", "7:00 PM", "Abundant Grace", "Main Court", "PK", "Westwood"],
+  [4, "2026-12-03", "Thu", "6:00 PM", "Alachua Sports Complex", "Court 1", "PK2", "Forge Elite"],
+  [4, "2026-12-03", "Thu", "6:00 PM", "Alachua Sports Complex", "Court 2", "Lincoln", "Lincoln 2"],
+  [4, "2026-12-03", "Thu", "7:00 PM", "Alachua Sports Complex", "Court 1", "Howard Bishop", "Oak View"],
+  [4, "2026-12-03", "Thu", "7:00 PM", "Alachua Sports Complex", "Court 2", "Kanapaha", "Open"],
+  [4, "2026-12-04", "Fri", "6:00 PM", "Abundant Grace", "Main Court", "Westside", "Fort Clarke"],
+  [4, "2026-12-04", "Fri", "7:00 PM", "Abundant Grace", "Main Court", "PK", "Howard Bishop"],
+  [5, "2026-12-08", "Tue", "6:00 PM", "Alachua Sports Complex", "Court 1", "Kanapaha", "Forge Elite"],
+  [5, "2026-12-08", "Tue", "6:00 PM", "Alachua Sports Complex", "Court 2", "Oak View", "Fort Clarke"],
+  [5, "2026-12-08", "Tue", "7:00 PM", "Alachua Sports Complex", "Court 1", "PK", "Open"],
+  [5, "2026-12-08", "Tue", "7:00 PM", "Alachua Sports Complex", "Court 2", "Howard Bishop", "Lincoln 2"],
+  [5, "2026-12-09", "Wed", "6:00 PM", "Abundant Grace", "Main Court", "Lincoln", "Westside"],
+  [5, "2026-12-09", "Wed", "7:00 PM", "Abundant Grace", "Main Court", "Lincoln 2", "Open"],
+  [5, "2026-12-09", "Wed", "6:00 PM", "Alachua Sports Complex", "Court 1", "Oak View", "Forge Elite"],
+  [5, "2026-12-09", "Wed", "6:00 PM", "Alachua Sports Complex", "Court 2", "Lincoln", "Kanapaha"],
+  [5, "2026-12-09", "Wed", "7:00 PM", "Alachua Sports Complex", "Court 1", "PK2", "Fort Clarke"],
+  [5, "2026-12-09", "Wed", "7:00 PM", "Alachua Sports Complex", "Court 2", "Westwood", "Howard Bishop"],
+  [5, "2026-12-11", "Fri", "6:00 PM", "Abundant Grace", "Main Court", "Westwood", "Westside"],
+  [5, "2026-12-11", "Fri", "7:00 PM", "Abundant Grace", "Main Court", "PK", "PK2"]
+];
+
+var DAY_FULL = { Tue: 'Tuesday', Wed: 'Wednesday', Thu: 'Thursday', Fri: 'Friday', Sat: 'Saturday', Mon: 'Monday', Sun: 'Sunday' };
+var VENUE_FULL = { 'Abundant Grace': 'Abundant Grace Church', 'Alachua Sports Complex': 'Alachua Sports Complex' };
+
+function updateSchedule() {
+  var ss = SpreadsheetApp.getActive();
+  var sch = ss.getSheetByName('Schedule');
+  var daily = ss.getSheetByName(SHEET.daily);
+  var setup = ss.getSheetByName(SHEET.setup);
+
+  // 1) Schedule tab — same column layout the formulas expect (A–H), plus Date in I.
+  sch.getRange('A1:K1001').clearContent();
+  sch.getRange('C2:C1001').setNumberFormat('@'); // keep "6:00 PM" as text, like before
+  var rows = SCHEDULE_2026.map(function (g) {
+    var p = g[1].split('-');
+    return [g[0], DAY_FULL[g[2]] || g[2], g[3], g[5], VENUE_FULL[g[4]] || g[4], g[6], g[7], g[6] + ' vs ' + g[7],
+            new Date(Number(p[0]), Number(p[1]) - 1, Number(p[2]))];
+  });
+  sch.getRange(1, 1, 1, 9).setValues([['Week', 'Day', 'Time', 'Court', 'Location', 'Team 1', 'Team 2', 'Matchup', 'Date']]).setFontWeight('bold');
+  sch.getRange(2, 1, rows.length, 9).setValues(rows);
+  sch.getRange(2, 9, rows.length, 1).setNumberFormat('ddd, mmm d, yyyy');
+  sch.getRange('K1:K3').setValues([['Schedule source'],
+    ['Gainesville_JV_League_Open_Updated.xlsx — Full Schedule, imported ' + Utilities.formatDate(new Date(), ss.getSpreadsheetTimeZone(), 'MMM d, yyyy')],
+    ['Dates in column I drive the Daily Tracker dates.']]);
+
+  // 2) Daily Tracker formulas, columns C–V. {c} = that day's column letter.
+  var S = 'Schedule!$A$2:$A$1001,{c}8,Schedule!$B$2:$B$1001,{c}7';
+  var patches = {
+    5:  '="W"&{c}8&" "&LEFT({c}7,3)&CHAR(10)&IF({c}11=0,"No games",IF(AND({c}12=1,{c}13=1),"Both venues",IF({c}12=1,"Sports complex",IF({c}13=1,"Church",""))))',
+    9:  '=IF({c}11=0,"",MINIFS(Schedule!$I$2:$I$1001,' + S + '))',
+    66: '=IF(OR({c}8="",{c}12<>1),0,SUMIFS(Setup!$B$32:$B$41,Setup!$A$32:$A$41,{c}8)*COUNTIFS(' + S + ',Schedule!$E$2:$E$1001,"Alachua Sports Complex")/COUNTIFS(Schedule!$A$2:$A$1001,{c}8,Schedule!$E$2:$E$1001,"Alachua Sports Complex"))',
+    67: '=IF(OR({c}8="",{c}13<>1),0,SUMIFS(Setup!$C$32:$C$41,Setup!$A$32:$A$41,{c}8)*COUNTIFS(' + S + ',Schedule!$E$2:$E$1001,"Abundant Grace Church")/COUNTIFS(Schedule!$A$2:$A$1001,{c}8,Schedule!$E$2:$E$1001,"Abundant Grace Church"))'
+  };
+  Object.keys(patches).forEach(function (row) {
+    var formulas = [[]];
+    for (var col = DAY_FIRST_COL; col < DAY_FIRST_COL + DAY_COUNT; col++) {
+      formulas[0].push(patches[row].replace(/\{c\}/g, colLetter_(col)));
+    }
+    daily.getRange(Number(row), DAY_FIRST_COL, 1, DAY_COUNT).setFormulas(formulas);
+  });
+  daily.getRange(9, DAY_FIRST_COL, 1, DAY_COUNT).setNumberFormat('ddd mmm d');
+
+  // 3) Setup: count only days that actually have games; refresh notes.
+  setup.getRange('B47').setFormula("=COUNTIFS('Daily Tracker'!C11:V11,\">0\")");
+  setup.getRange('D47').setValue('Days with at least one scheduled game (from Schedule).');
+  setup.getRange('D9').setValue('Weeks 1–4: Tue–Fri. Week 5: Tue, Wed (both venues), Fri.');
+  setup.getRange('D10').setValue('Tue/Thu: 4 games at the sports complex. Wed/Fri: 2 at the church. Wed Dec 9: 6 games.');
+  setup.getRange('D28').setValue('Not used anymore: daily dates come from the Schedule tab (column I).');
+
+  SpreadsheetApp.flush();
+  ss.toast('Schedule updated: ' + rows.length + ' games.', 'Kenny League', 8);
 }

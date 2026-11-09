@@ -162,6 +162,59 @@
     return map;
   }
 
+  /* ---------- Schedule (from the API's "schedule" list) ---------- */
+  function renderSchedule(games) {
+    var body = document.getElementById("sched-body");
+    var weekSel = document.getElementById("sched-week");
+    var teamSel = document.getElementById("sched-team");
+    var count = document.getElementById("sched-count");
+    if (!body || !weekSel || !teamSel) return;
+    if (!games.length) {
+      body.innerHTML = '<tr><td colspan="6" class="placeholder">No schedule found in the sheet.</td></tr>';
+      return;
+    }
+    var weeks = [], teams = [];
+    games.forEach(function (g) {
+      if (weeks.indexOf(g.week) === -1) weeks.push(g.week);
+      [g.home, g.away].forEach(function (t) { if (t && teams.indexOf(t) === -1) teams.push(t); });
+    });
+    teams.sort();
+    weeks.forEach(function (w) { weekSel.appendChild(new Option("Week " + w, w)); });
+    teams.forEach(function (t) { teamSel.appendChild(new Option(t, t)); });
+
+    function cell(text, cls) {
+      var td = document.createElement("td");
+      td.textContent = text;
+      if (cls) td.className = cls;
+      return td;
+    }
+
+    function draw() {
+      var w = weekSel.value, t = teamSel.value;
+      var shown = games.filter(function (g) {
+        return (!w || String(g.week) === w) && (!t || g.home === t || g.away === t);
+      });
+      body.innerHTML = "";
+      var lastDate = null;
+      shown.forEach(function (g) {
+        var tr = document.createElement("tr");
+        if (g.date !== lastDate) { tr.className = "sched-newday"; lastDate = g.date; }
+        tr.appendChild(cell(g.date || ("Week " + g.week + " " + g.day)));
+        tr.appendChild(cell(g.time));
+        tr.appendChild(cell(g.venue));
+        tr.appendChild(cell(g.court));
+        tr.appendChild(cell(g.home, t && g.home === t ? "sched-hl" : ""));
+        tr.appendChild(cell(g.away, t && g.away === t ? "sched-hl" : ""));
+        body.appendChild(tr);
+      });
+      if (count) count.textContent = shown.length + " game" + (shown.length === 1 ? "" : "s");
+    }
+
+    weekSel.addEventListener("change", draw);
+    teamSel.addEventListener("change", draw);
+    draw();
+  }
+
   function loadFromCsv() {
     var url = typeof SHEET_CSV_URL === "string" ? SHEET_CSV_URL.trim() : "";
     if (UNSET_URLS[url]) {
@@ -192,6 +245,7 @@
       .then(function (json) {
         if (!json || !json.ok || !json.outputs) throw new Error("Bad API response");
         fill(json.outputs);
+        renderSchedule(json.schedule || []);
       })
       .catch(function () {
         loadFromCsv();
