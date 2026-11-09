@@ -1,0 +1,101 @@
+KENNY LEAGUE DASHBOARD — TEAM SETUP
+===================================
+
+Live site:  https://gms-jv-dashboard.alimousli13.workers.dev
+Repo:       https://github.com/alimousli13/GMS-JV-DASHBOARD
+Read README.md in the repo after setup (it has the do's and don'ts).
+
+
+ONE-TIME SETUP (about 10 minutes)
+---------------------------------
+
+1. ACCEPT THE INVITE
+   - You need a GitHub account (free).
+   - Check your email for the invite from alimousli13, or go to
+     https://github.com/notifications and click Accept.
+   - Until you accept, the repo link shows "404 / not found".
+
+2. INSTALL CURSOR AND CHECK GIT
+   - Download Cursor: https://cursor.com
+   - Open Terminal and type:   git --version
+     If your Mac asks to install "command line developer tools", click Install.
+     (Windows: install Git from https://git-scm.com)
+
+3. TELL GIT WHO YOU ARE (use your GitHub name and email)
+     git config --global user.name "Your Name"
+     git config --global user.email "you@email.com"
+
+4. CLONE THE REPO IN CURSOR
+   - Open Cursor -> on the start screen click "Clone repo"
+     (or Cmd+Shift+P -> type "Git: Clone").
+   - Choose "Clone from GitHub", sign in to GitHub when the browser opens,
+     and pick:  alimousli13/GMS-JV-DASHBOARD
+   - Pick a folder to save it in (e.g. Documents), then click "Open".
+   - Terminal alternative:
+       cd ~/Documents
+       git clone https://github.com/alimousli13/GMS-JV-DASHBOARD.git
+
+5. MAKE A GITHUB TOKEN (only if git asks you for a password)
+   If you signed in through Cursor, pushing may just work. If the terminal
+   asks "Password for https://...github.com", use a CLASSIC token:
+   - GitHub -> your profile picture -> Settings -> Developer settings
+     -> Personal access tokens -> Tokens (classic) -> Generate new token (classic)
+   - Note: "Kenny League dashboard"
+   - Expiration: 90 days
+   - Scopes: check ONLY "repo"
+   - Click Generate token and COPY IT NOW (starts with ghp_; shown only once)
+   - When git asks:
+       Username: your GitHub username
+       Password: paste the token (nothing shows while pasting; that's normal)
+   - Your Mac saves it, so you won't be asked again until it expires.
+   NOTE: "Fine-grained" tokens do NOT work here. GitHub doesn't support them
+   for repos you were invited to as a collaborator. Use classic.
+
+
+EVERY TIME YOU MAKE A CHANGE
+----------------------------
+
+1. Open the GMS-JV-DASHBOARD folder in Cursor
+   (File -> Open Folder), then open the terminal: View -> Terminal.
+
+2. GET THE LATEST VERSION FIRST (always!)
+     git pull
+
+3. Make your edit (index.html / style.css in Cursor, or ask your AI and give it
+   README.md + "follow the Rules for AI assistants section").
+
+4. Preview it locally (optional):
+     python3 -m http.server 8000
+   then open http://localhost:8000. Press Ctrl+C in the terminal to stop.
+
+5. Save it to GitHub (this updates the live site in about a minute):
+     git add . && git commit -m "describe what you changed" && git push
+
+6. Check the live site (hard refresh: Cmd+Shift+R).
+
+
+DO'S AND DON'TS (short version; full list in README.md)
+------------------------------------------------------
+DO     git pull before you start, every time.
+DO     keep all numbers and formulas in the Google Sheet.
+DO     show numbers with <span data-key="...">—</span> (see README).
+DON'T  type dollar amounts or do math in the HTML/JavaScript.
+DON'T  edit anything in the apps-script/ folder or on script.google.com.
+       Message Ali first.
+DON'T  touch config.js, deploy.sh, .clasp.json, wrangler.jsonc.
+DON'T  share the Enter Data passcode.
+
+
+IF SOMETHING GOES WRONG
+-----------------------
+"rejected ... fetch first"     -> run  git pull  then push again.
+"Repository not found" / 404   -> accept the invite, or you're signed in to
+                                  the wrong GitHub account / used a
+                                  fine-grained token (use classic).
+"Authentication failed"        -> token expired or mistyped; make a new
+                                  classic token (step 5).
+Merge conflict                 -> open the file in Cursor, keep the right
+                                  lines, delete the <<<<<<< ======= >>>>>>>
+                                  markers, then:
+                                  git add . && git commit -m "Merge" && git push
+Not sure?                      -> stop and message Ali before forcing anything.

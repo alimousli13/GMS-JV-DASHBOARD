@@ -102,7 +102,7 @@ git add . && git commit -m "what changed" && git push # site-only changes
 
 ## Setup
 
-**Every teammate:** accept the GitHub collaborator invite → clone in Cursor → create a fine-grained GitHub token (only this repo, Contents: Read and write) and use it as the password when git asks.
+**Every teammate:** follow `TEAM-SETUP.txt`: accept the GitHub collaborator invite → clone in Cursor (sign in to GitHub) → if git asks for a password, use a **classic** token with the `repo` scope. Fine-grained tokens don't work for repos you're a collaborator on (repo owner can use either).
 
 **Only if you'll change Apps Script:** get edit access to the Google Sheet → install Node.js → turn on the Apps Script API at https://script.google.com/home/usersettings → `npx @google/clasp@2.4.2 login`.
 
