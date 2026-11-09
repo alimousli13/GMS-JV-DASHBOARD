@@ -437,26 +437,133 @@
     </section>
     <!-- ===== END: Funding ===== -->
 
-    <!-- ===== START: Sponsors ===== -->
+    <!-- ===== START: Sponsors =====
+      Sponsorship Management Hub. Counts and dollars come only from Web-tab
+      data-key values. Sponsor rows are not loaded here: contact details must
+      not travel through the public GET API.
+
+      Planned Sponsors tab (not created in this phase). Row 1 = headers, data
+      from row 2. Yellow input cells only; no website writes until a secure
+      read/write design is approved.
+        A sponsor_id          text
+        B business_name       text
+        C contact_person      text, private
+        D email               text, private
+        E phone               text, private
+        F tier                text
+        G status              Prospect | Contacted | Pledged | Committed | Received | Declined
+        H committed_amount    money
+        I amount_received     money
+        J next_follow_up      date
+        K notes               text, private
+        L active              TRUE/FALSE
+
+      Web-tab rows still needed (section: sponsors). Formulas stay in the sheet.
+        sponsors_committed, currency
+          =SUMIFS(Sponsors!H2:H,Sponsors!G2:G,"<>Prospect",Sponsors!G2:G,"<>Contacted",Sponsors!G2:G,"<>Declined",Sponsors!G2:G,"<>")
+        sponsors_payments_received, currency
+          =SUM(Sponsors!I2:I)
+        sponsors_outstanding, currency
+          =SUMIFS(Sponsors!H2:H,Sponsors!G2:G,"<>Prospect",Sponsors!G2:G,"<>Contacted",Sponsors!G2:G,"<>Declined",Sponsors!G2:G,"<>")-SUM(Sponsors!I2:I)
+        sponsors_prospect, number (existing key — keep it)
+          When column L exists, count active prospects only:
+          =COUNTIFS(Sponsors!G2:G,"Prospect",Sponsors!L2:L,TRUE)
+          Until that tab exists, leave the current Web formula in place.
+        sponsors_total, sponsors_pledged, sponsors_received stay as they are.
+    -->
     <section id="sponsors" class="section">
-      <h2>Sponsors</h2>
+      <h2>Sponsorship Management</h2>
+
+      <h3 class="sponsor-heading">Sponsorship Overview</h3>
       <div class="kpi-grid">
         <article class="kpi">
-          <p class="kpi-label">Total sponsors</p>
-          <p class="kpi-value num placeholder" data-key="sponsors_total">—</p>
+          <p class="kpi-label">Total Committed</p>
+          <p class="kpi-value num placeholder" data-key="sponsors_committed">—</p>
         </article>
         <article class="kpi">
-          <p class="kpi-label">Prospect</p>
+          <p class="kpi-label">Payments Received</p>
+          <p class="kpi-value num placeholder" data-key="sponsors_payments_received">—</p>
+        </article>
+        <article class="kpi">
+          <p class="kpi-label">Outstanding</p>
+          <p class="kpi-value num placeholder" data-key="sponsors_outstanding">—</p>
+        </article>
+        <article class="kpi">
+          <p class="kpi-label">Active Prospects</p>
           <p class="kpi-value num placeholder" data-key="sponsors_prospect">—</p>
         </article>
-        <article class="kpi">
-          <p class="kpi-label">Pledged</p>
-          <p class="kpi-value num placeholder" data-key="sponsors_pledged">—</p>
-        </article>
-        <article class="kpi">
-          <p class="kpi-label">Received</p>
-          <p class="kpi-value num placeholder" data-key="sponsors_received">—</p>
-        </article>
+      </div>
+      <p class="note sponsor-overview-note">Committed, received, and outstanding amounts display only after those Web-tab keys exist. Active prospects uses the existing prospect count. Funding payments on the Funding section are separate and are not added in here.</p>
+      <div class="card sponsor-existing">
+        <h3 class="sponsor-heading">Existing sheet counts</h3>
+        <dl class="sponsor-existing-list">
+          <div>
+            <dt>Total sponsors</dt>
+            <dd class="num placeholder" data-key="sponsors_total">—</dd>
+          </div>
+          <div>
+            <dt>Pledged</dt>
+            <dd class="num placeholder" data-key="sponsors_pledged">—</dd>
+          </div>
+          <div>
+            <dt>Received</dt>
+            <dd class="num placeholder" data-key="sponsors_received">—</dd>
+          </div>
+        </dl>
+      </div>
+
+      <h3 class="sponsor-heading">Sponsor CRM &amp; Outreach Pipeline</h3>
+      <div class="card sponsor-crm">
+        <div class="sponsor-filters">
+          <label for="sponsor-search">Search sponsors
+            <input id="sponsor-search" type="search" placeholder="Business, contact, tier, or notes" autocomplete="off">
+          </label>
+          <label for="sponsor-status">Outreach status
+            <select id="sponsor-status">
+              <option value="">All statuses</option>
+              <option value="Prospect">Prospect</option>
+              <option value="Contacted">Contacted</option>
+              <option value="Pledged">Pledged</option>
+              <option value="Committed">Committed</option>
+              <option value="Received">Received</option>
+              <option value="Declined">Declined</option>
+            </select>
+          </label>
+          <button type="button" class="btn" id="sponsor-followups" aria-pressed="false">Follow-Ups Due</button>
+        </div>
+        <div class="table-wrap">
+          <table class="sponsor-table">
+            <caption class="sponsor-caption">Sponsor directory</caption>
+            <thead>
+              <tr>
+                <th scope="col">Business name</th>
+                <th scope="col">Contact person</th>
+                <th scope="col">Sponsorship tier</th>
+                <th scope="col">Outreach status</th>
+                <th scope="col">Next follow-up</th>
+                <th scope="col">Notes</th>
+              </tr>
+            </thead>
+            <tbody id="sponsor-crm-body">
+              <tr>
+                <td colspan="6" class="placeholder">Loading sponsor directory…</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <h3 class="sponsor-heading">Outreach Resource Center</h3>
+      <!-- Add another resource by copying a link below. The grid wraps a third card automatically. -->
+      <div class="sponsor-resource-grid">
+        <a class="card sponsor-resource" href="https://docs.google.com/document/d/1y1FXJgGzikpaiGQrJhbI_9LvJQBFaKvs63prGwcVMIY/edit" target="_blank" rel="noopener noreferrer">
+          <h3>Sponsorship Document</h3>
+          <p>Google Doc <span class="sponsor-resource-hint">opens in a new tab</span></p>
+        </a>
+        <a class="card sponsor-resource" href="https://docs.google.com/spreadsheets/d/1nYZQU4JA1LH0jcubxpNhv-Dj6_YultIwtWUVENWDwxM/edit" target="_blank" rel="noopener noreferrer">
+          <h3>Sponsorship Spreadsheet</h3>
+          <p>Google Sheet <span class="sponsor-resource-hint">opens in a new tab</span></p>
+        </a>
       </div>
     </section>
     <!-- ===== END: Sponsors ===== -->

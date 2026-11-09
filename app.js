@@ -263,4 +263,103 @@
     scheduleMessage("Schedule needs API_URL set in config.js.");
     loadFromCsv();
   }
+
+  /*
+    Sponsor directory — presentation only.
+    Rows stay empty until a secure read path exists. Do not fill this list
+    from the public GET payload or the published Web CSV. Contact person,
+    email, phone, and notes are private and must not be returned publicly.
+    Follow-up matching compares dates only. It does not total any money.
+  */
+  var SPONSOR_ROWS = [];
+  var SPONSOR_DIRECTORY_READY = false;
+
+  function sponsorTodayIso() {
+    var d = new Date();
+    var month = String(d.getMonth() + 1);
+    var day = String(d.getDate());
+    if (month.length < 2) month = "0" + month;
+    if (day.length < 2) day = "0" + day;
+    return d.getFullYear() + "-" + month + "-" + day;
+  }
+
+  function sponsorFollowUpDue(row) {
+    var follow = String(row.nextFollowUp || "").slice(0, 10);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(follow)) return false;
+    var status = String(row.status || "");
+    if (status === "Declined" || status === "Received") return false;
+    return follow <= sponsorTodayIso();
+  }
+
+  function initSponsorDirectory() {
+    var body = document.getElementById("sponsor-crm-body");
+    var search = document.getElementById("sponsor-search");
+    var status = document.getElementById("sponsor-status");
+    var followups = document.getElementById("sponsor-followups");
+    if (!body || !search || !status || !followups) return;
+
+    var EMPTY_MESSAGE = "No sponsor records are shown on this public page. Names, follow-up dates, and notes stay off the dashboard until a secure Sponsors connection is approved.";
+    var FOLLOWUP_MESSAGE = "Follow-Ups Due will list sponsors whose next follow-up is today or earlier. That list is not loaded here, so private contact details stay off the public page.";
+
+    function setMessage(text) {
+      body.innerHTML = "";
+      var tr = document.createElement("tr");
+      var td = document.createElement("td");
+      td.colSpan = 6;
+      td.className = "placeholder";
+      td.textContent = text;
+      tr.appendChild(td);
+      body.appendChild(tr);
+    }
+
+    function draw() {
+      if (!SPONSOR_DIRECTORY_READY) {
+        setMessage(followups.getAttribute("aria-pressed") === "true" ? FOLLOWUP_MESSAGE : EMPTY_MESSAGE);
+        return;
+      }
+
+      var query = search.value.trim().toLowerCase();
+      var selected = status.value;
+      var dueOnly = followups.getAttribute("aria-pressed") === "true";
+      var shown = SPONSOR_ROWS.filter(function (row) {
+        if (selected && row.status !== selected) return false;
+        if (dueOnly && !sponsorFollowUpDue(row)) return false;
+        if (!query) return true;
+        var haystack = [row.businessName, row.contactPerson, row.tier, row.status, row.notes].join(" ").toLowerCase();
+        return haystack.indexOf(query) !== -1;
+      });
+
+      if (!shown.length) {
+        setMessage(dueOnly ? "No follow-ups are due for the current filters." : "No sponsors match the current filters.");
+        return;
+      }
+
+      body.innerHTML = "";
+      shown.forEach(function (row) {
+        var tr = document.createElement("tr");
+        [row.businessName, row.contactPerson, row.tier, row.status, row.nextFollowUp, row.notes].forEach(function (value) {
+          var td = document.createElement("td");
+          var text = value == null ? "" : String(value).trim();
+          td.textContent = text || "—";
+          tr.appendChild(td);
+        });
+        body.appendChild(tr);
+      });
+    }
+
+    search.addEventListener("input", draw);
+    status.addEventListener("change", draw);
+    followups.addEventListener("click", function () {
+      var pressed = followups.getAttribute("aria-pressed") === "true";
+      followups.setAttribute("aria-pressed", pressed ? "false" : "true");
+      draw();
+    });
+
+    setMessage("Loading sponsor directory…");
+    window.setTimeout(function () {
+      draw();
+    }, 0);
+  }
+
+  initSponsorDirectory();
 })();
