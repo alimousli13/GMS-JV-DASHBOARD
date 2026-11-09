@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kenny League — Season Dashboard</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <nav class="site-nav" aria-label="Section">
+    <div class="site-nav-inner">
+      <a href="#overview">Overview</a>
+      <a href="#pnl">Season P&amp;L</a>
+      <a href="#weekly">Weekly Results</a>
+      <a href="#setup">Setup</a>
+      <a href="#schedule">Schedule</a>
+      <a href="#funding">Funding</a>
+      <a href="#sponsors">Sponsors</a>
+      <a href="#workstreams">Workstreams</a>
+    </div>
+  </nav>
+
+  <div id="data-banner" class="data-banner" role="status" hidden>
+    <p>Live data unavailable — showing placeholders.</p>
+    <button type="button" id="data-banner-dismiss" aria-label="Dismiss">×</button>
+  </div>
+
+  <main id="main" class="page">
+    <header class="page-header">
+      <h1>Kenny League — Season Dashboard</h1>
+      <p class="subtitle">
+        2026 JV Season ·
+        <span class="num placeholder" data-key="teams">—</span> teams ·
+        <span class="num placeholder" data-key="weeks">—</span> weeks ·
+        <span class="num placeholder" data-key="game_days">—</span> game days ·
+        <span class="num placeholder" data-key="games">—</span> games
+      </p>
+      <p class="last-updated">Last updated: <span class="placeholder" data-key="last_updated">—</span></p>
+    </header>
+
+    <!-- ===== START: Season Overview ===== -->
+    <section id="overview" class="section">
+      <h2>Season Overview</h2>
+      <div class="kpi-grid">
+        <article class="kpi">
+          <p class="kpi-label">Season Net Income</p>
+          <p class="kpi-value num placeholder" data-key="season_net" data-signed>—</p>
+        </article>
+        <article class="kpi">
+          <p class="kpi-label">Net Using Fees Received</p>
+          <p class="kpi-value num placeholder" data-key="net_fees_received" data-signed>—</p>
+        </article>
+        <article class="kpi">
+          <p class="kpi-label">Completed-Day Operating Net</p>
+          <p class="kpi-value num placeholder" data-key="completed_day_net" data-signed>—</p>
+        </article>
+        <article class="kpi">
+          <p class="kpi-label">Team Fee Budget</p>
+          <p class="kpi-value num placeholder" data-key="team_fee_budget">—</p>
+        </article>
+        <article class="kpi">
+          <p class="kpi-label">Team Fees Received</p>
+          <p class="kpi-value num placeholder" data-key="team_fees_received">—</p>
+        </article>
+        <article class="kpi">
+          <p class="kpi-label">Team Fees Still to Collect</p>
+          <p class="kpi-value num placeholder" data-key="team_fees_to_collect">—</p>
+        </article>
+        <article class="kpi">
+          <p class="kpi-label">Days Completed</p>
+          <p class="kpi-value num">
+            <span class="placeholder" data-key="days_completed">—</span>
+            of
+            <span class="placeholder" data-key="game_days">—</span>
+          </p>
+        </article>
+        <article class="kpi">
+          <p class="kpi-label">Games Scheduled</p>
+          <p class="kpi-value num placeholder" data-key="games">—</p>
+        </article>
+        <article class="kpi">
+          <p class="kpi-label">Missing Prices</p>
+          <p class="kpi-value num placeholder" data-key="missing_prices">—</p>
+        </article>
+      </div>
+    </section>
+    <!-- ===== END: Season Overview ===== -->
+
+    <!-- ===== START: Season P&L ===== -->
+    <section id="pnl" class="section">
+      <h2>Season P&amp;L</h2>
+      <div class="split">
+        <div class="card">
+          <h3>Revenue</h3>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Line</th>
+                  <th class="num">Amount</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Team fees (budget)</td>
+                  <td class="num placeholder" data-key="rev_team_fees">—</td>
+                </tr>
+                <tr>
+                  <td>Game admissions</td>
+                  <td class="num placeholder" data-key="rev_admissions">—</td>
+                </tr>
+                <tr>
+                  <td>Game concessions</td>
+                  <td class="num placeholder" data-key="rev_concessions">—</td>
+                </tr>
+                <tr>
+                  <td>Other event revenue</td>
+                  <td class="num placeholder" data-key="rev_other_event">—</td>
+                </tr>
+                <tr>
+                  <td>Additional sponsorship</td>
+                  <td class="num placeholder" data-key="rev_add_sponsor">—</td>
+                </tr>
+                <tr>
+                  <td>Other funding</td>
+                  <td class="num placeholder" data-key="rev_other_funding">—</td>
+                </tr>
+                <tr class="total-row">
+                  <th scope="row">Total revenue</th>
+                  <td class="num placeholder" data-key="rev_total">—</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="card">
+          <h3>Costs</h3>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Line</th>
+                  <th class="num">Amount</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Court rental</td>
+                  <td class="num placeholder" data-key="cost_court">—</td>
+                </tr>
+                <tr>
+                  <td>Church rental</td>
+                  <td class="num placeholder" data-key="cost_church">—</td>
+                </tr>
+                <tr>
+                  <td>Other weekly fixed</td>
+                  <td class="num placeholder" data-key="cost_other_fixed">—</td>
+                </tr>
+                <tr>
+                  <td>Referees</td>
+                  <td class="num placeholder" data-key="cost_referees">—</td>
+                </tr>
+                <tr>
+                  <td>Scorekeepers</td>
+                  <td class="num placeholder" data-key="cost_scorekeepers">—</td>
+                </tr>
+                <tr>
+                  <td>Other staff</td>
+                  <td class="num placeholder" data-key="cost_other_staff">—</td>
+                </tr>
+                <tr>
+                  <td>Concession items sold</td>
+                  <td class="num placeholder" data-key="cost_concession_items">—</td>
+                </tr>
+                <tr>
+                  <td>Other supplies</td>
+                  <td class="num placeholder" data-key="cost_supplies">—</td>
+                </tr>
+                <tr>
+                  <td>Other event expenses</td>
+                  <td class="num placeholder" data-key="cost_other_event">—</td>
+                </tr>
+                <tr>
+                  <td>Card processing fees</td>
+                  <td class="num placeholder" data-key="cost_card_fees">—</td>
+                </tr>
+                <tr>
+                  <td>Insurance net of refund</td>
+                  <td class="num placeholder" data-key="cost_insurance_net">—</td>
+                </tr>
+                <tr class="total-row">
+                  <th scope="row">Total cost</th>
+                  <td class="num placeholder" data-key="cost_total">—</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+    <!-- ===== END: Season P&L ===== -->
+
+    <!-- ===== START: Weekly Results ===== -->
+    <section id="weekly" class="section">
+      <h2>Weekly Results</h2>
+      <div class="card">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Week</th>
+                <th class="num">Court rental</th>
+                <th class="num">Church rental</th>
+                <th class="num">Other fixed</th>
+                <th class="num">Event revenue</th>
+                <th class="num">Variable costs</th>
+                <th class="num">Operating net</th>
+                <th class="num">Completed days</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Week 1</td>
+                <td class="num placeholder" data-key="w1_court">—</td>
+                <td class="num placeholder" data-key="w1_church">—</td>
+                <td class="num placeholder" data-key="w1_other_fixed">—</td>
+                <td class="num placeholder" data-key="w1_event_revenue">—</td>
+                <td class="num placeholder" data-key="w1_variable_costs">—</td>
+                <td class="num placeholder" data-key="w1_operating_net" data-signed>—</td>
+                <td class="num placeholder" data-key="w1_completed_days">—</td>
+              </tr>
+              <tr>
+                <td>Week 2</td>
+                <td class="num placeholder" data-key="w2_court">—</td>
+                <td class="num placeholder" data-key="w2_church">—</td>
+                <td class="num placeholder" data-key="w2_other_fixed">—</td>
+                <td class="num placeholder" data-key="w2_event_revenue">—</td>
+                <td class="num placeholder" data-key="w2_variable_costs">—</td>
+                <td class="num placeholder" data-key="w2_operating_net" data-signed>—</td>
+                <td class="num placeholder" data-key="w2_completed_days">—</td>
+              </tr>
+              <tr>
+                <td>Week 3</td>
+                <td class="num placeholder" data-key="w3_court">—</td>
+                <td class="num placeholder" data-key="w3_church">—</td>
+                <td class="num placeholder" data-key="w3_other_fixed">—</td>
+                <td class="num placeholder" data-key="w3_event_revenue">—</td>
+                <td class="num placeholder" data-key="w3_variable_costs">—</td>
+                <td class="num placeholder" data-key="w3_operating_net" data-signed>—</td>
+                <td class="num placeholder" data-key="w3_completed_days">—</td>
+              </tr>
+              <tr>
+                <td>Week 4</td>
+                <td class="num placeholder" data-key="w4_court">—</td>
+                <td class="num placeholder" data-key="w4_church">—</td>
+                <td class="num placeholder" data-key="w4_other_fixed">—</td>
+                <td class="num placeholder" data-key="w4_event_revenue">—</td>
+                <td class="num placeholder" data-key="w4_variable_costs">—</td>
+                <td class="num placeholder" data-key="w4_operating_net" data-signed>—</td>
+                <td class="num placeholder" data-key="w4_completed_days">—</td>
+              </tr>
+              <tr>
+                <td>Week 5</td>
+                <td class="num placeholder" data-key="w5_court">—</td>
+                <td class="num placeholder" data-key="w5_church">—</td>
+                <td class="num placeholder" data-key="w5_other_fixed">—</td>
+                <td class="num placeholder" data-key="w5_event_revenue">—</td>
+                <td class="num placeholder" data-key="w5_variable_costs">—</td>
+                <td class="num placeholder" data-key="w5_operating_net" data-signed>—</td>
+                <td class="num placeholder" data-key="w5_completed_days">—</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+    <!-- ===== END: Weekly Results ===== -->
+
+    <!-- ===== START: Setup / Assumptions ===== -->
+    <section id="setup" class="section">
+      <h2>Setup / Assumptions</h2>
+      <div class="card">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Assumption</th>
+                <th class="num">Value</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Teams</td>
+                <td class="num placeholder" data-key="teams">—</td>
+              </tr>
+              <tr>
+                <td>Fee per team</td>
+                <td class="num placeholder" data-key="fee_per_team">—</td>
+              </tr>
+              <tr>
+                <td>Sponsor portion of fee</td>
+                <td class="num placeholder" data-key="sponsor_portion">—</td>
+              </tr>
+              <tr>
+                <td>Player portion of fee</td>
+                <td class="num placeholder" data-key="player_portion">—</td>
+              </tr>
+              <tr>
+                <td>Referees per game</td>
+                <td class="num placeholder" data-key="refs_per_game">—</td>
+              </tr>
+              <tr>
+                <td>Referee rate (per game)</td>
+                <td class="num placeholder" data-key="ref_rate">—</td>
+              </tr>
+              <tr>
+                <td>Scorekeeper rate (per hour)</td>
+                <td class="num placeholder" data-key="scorekeeper_rate">—</td>
+              </tr>
+              <tr>
+                <td>Admission (cash)</td>
+                <td class="num placeholder" data-key="admission_cash">—</td>
+              </tr>
+              <tr>
+                <td>Admission (card)</td>
+                <td class="num placeholder" data-key="admission_card">—</td>
+              </tr>
+              <tr>
+                <td>Large Gatorade price</td>
+                <td class="num placeholder" data-key="lg_gatorade_price">—</td>
+              </tr>
+              <tr>
+                <td>Large Gatorade cost</td>
+                <td class="num placeholder" data-key="lg_gatorade_cost">—</td>
+              </tr>
+              <tr>
+                <td>Small Gatorade price</td>
+                <td class="num placeholder" data-key="sm_gatorade_price">—</td>
+              </tr>
+              <tr>
+                <td>Small Gatorade cost</td>
+                <td class="num placeholder" data-key="sm_gatorade_cost">—</td>
+              </tr>
+              <tr>
+                <td>Skittles price</td>
+                <td class="num placeholder" data-key="skittles_price">—</td>
+              </tr>
+              <tr>
+                <td>Skittles cost</td>
+                <td class="num placeholder" data-key="skittles_cost">—</td>
+              </tr>
+              <tr>
+                <td>Card processing rate</td>
+                <td class="num placeholder" data-key="card_rate">—</td>
+              </tr>
+              <tr>
+                <td>Insurance cost</td>
+                <td class="num placeholder" data-key="insurance_cost">—</td>
+              </tr>
+              <tr>
+                <td>Insurance refund expected</td>
+                <td class="num placeholder" data-key="insurance_refund_expected">—</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+    <!-- ===== END: Setup / Assumptions ===== -->
+
+    <!-- ===== START: Schedule Summary ===== -->
+    <section id="schedule" class="section">
+      <h2>Schedule Summary</h2>
+      <div class="card">
+        <p class="note">Tue &amp; Thu: 4 games at Alachua Sports Complex (Courts 1–2, 6 PM &amp; 7 PM). Wed &amp; Fri: 2 games at Abundant Grace Church (Main Court, 6 PM &amp; 7 PM).</p>
+        <h3>Week 1 example</h3>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Day</th>
+                <th>Venue</th>
+                <th>Court</th>
+                <th>Time</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td>Tuesday</td><td>Alachua Sports Complex</td><td>Court 1</td><td>6 PM</td></tr>
+              <tr><td>Tuesday</td><td>Alachua Sports Complex</td><td>Court 2</td><td>6 PM</td></tr>
+              <tr><td>Tuesday</td><td>Alachua Sports Complex</td><td>Court 1</td><td>7 PM</td></tr>
+              <tr><td>Tuesday</td><td>Alachua Sports Complex</td><td>Court 2</td><td>7 PM</td></tr>
+              <tr><td>Wednesday</td><td>Abundant Grace Church</td><td>Main Court</td><td>6 PM</td></tr>
+              <tr><td>Wednesday</td><td>Abundant Grace Church</td><td>Main Court</td><td>7 PM</td></tr>
+              <tr><td>Thursday</td><td>Alachua Sports Complex</td><td>Court 1</td><td>6 PM</td></tr>
+              <tr><td>Thursday</td><td>Alachua Sports Complex</td><td>Court 2</td><td>6 PM</td></tr>
+              <tr><td>Thursday</td><td>Alachua Sports Complex</td><td>Court 1</td><td>7 PM</td></tr>
+              <tr><td>Thursday</td><td>Alachua Sports Complex</td><td>Court 2</td><td>7 PM</td></tr>
+              <tr><td>Friday</td><td>Abundant Grace Church</td><td>Main Court</td><td>6 PM</td></tr>
+              <tr><td>Friday</td><td>Abundant Grace Church</td><td>Main Court</td><td>7 PM</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+    <!-- ===== END: Schedule Summary ===== -->
+
+    <!-- ===== START: Funding ===== -->
+    <section id="funding" class="section">
+      <h2>Funding</h2>
+      <div class="kpi-grid">
+        <article class="kpi">
+          <p class="kpi-label">Sponsor payments</p>
+          <p class="kpi-value num placeholder" data-key="pay_sponsors_fees">—</p>
+        </article>
+        <article class="kpi">
+          <p class="kpi-label">Coach / player payments</p>
+          <p class="kpi-value num placeholder" data-key="pay_players_fees">—</p>
+        </article>
+        <article class="kpi">
+          <p class="kpi-label">Additional sponsorship</p>
+          <p class="kpi-value num placeholder" data-key="pay_add_sponsor">—</p>
+        </article>
+        <article class="kpi">
+          <p class="kpi-label">Other funding</p>
+          <p class="kpi-value num placeholder" data-key="pay_other_funding">—</p>
+        </article>
+        <article class="kpi">
+          <p class="kpi-label">Insurance refund received</p>
+          <p class="kpi-value num placeholder" data-key="pay_insurance_refund">—</p>
+        </article>
+        <article class="kpi">
+          <p class="kpi-label">Expected insurance refund</p>
+          <p class="kpi-value num placeholder" data-key="pay_expected_refund">—</p>
+        </article>
+      </div>
+    </section>
+    <!-- ===== END: Funding ===== -->
+
+    <!-- ===== START: Sponsors ===== -->
+    <section id="sponsors" class="section">
+      <h2>Sponsors</h2>
+      <div class="kpi-grid">
+        <article class="kpi">
+          <p class="kpi-label">Total sponsors</p>
+          <p class="kpi-value num placeholder" data-key="sponsors_total">—</p>
+        </article>
+        <article class="kpi">
+          <p class="kpi-label">Prospect</p>
+          <p class="kpi-value num placeholder" data-key="sponsors_prospect">—</p>
+        </article>
+        <article class="kpi">
+          <p class="kpi-label">Pledged</p>
+          <p class="kpi-value num placeholder" data-key="sponsors_pledged">—</p>
+        </article>
+        <article class="kpi">
+          <p class="kpi-label">Received</p>
+          <p class="kpi-value num placeholder" data-key="sponsors_received">—</p>
+        </article>
+      </div>
+    </section>
+    <!-- ===== END: Sponsors ===== -->
+
+    <!-- ===== START: Workstreams ===== -->
+    <section id="workstreams" class="section">
+      <h2>Workstreams</h2>
+      <div class="workstream-grid">
+        <!-- ===== START: Finance, Ticketing & Payments (Owner: Ali) ===== -->
+        <article class="card ws-card ws-finance-card">
+          <h3>Finance, Ticketing &amp; Payments</h3>
+          <p class="owner">Owner: Ali</p>
+          <p class="ws-placeholder">Add content inside this fence. Use data-key spans for any live numbers.</p>
+        </article>
+        <!-- ===== END: Finance, Ticketing & Payments ===== -->
+
+        <!-- ===== START: Game-Day Experience & Operations (Owner: Ali) ===== -->
+        <article class="card ws-card ws-ops-card">
+          <h3>Game-Day Experience &amp; Operations</h3>
+          <p class="owner">Owner: Ali</p>
+          <p class="ws-placeholder">Add content inside this fence. Use data-key spans for any live numbers.</p>
+        </article>
+        <!-- ===== END: Game-Day Experience & Operations ===== -->
+
+        <!-- ===== START: Workstream 3 (Owner: TBD) ===== -->
+        <article class="card ws-card ws-3-card">
+          <h3>Workstream 3</h3>
+          <p class="owner">Owner: TBD</p>
+          <p class="ws-placeholder">Add content inside this fence. Use data-key spans for any live numbers.</p>
+        </article>
+        <!-- ===== END: Workstream 3 ===== -->
+
+        <!-- ===== START: Workstream 4 (Owner: TBD) ===== -->
+        <article class="card ws-card ws-4-card">
+          <h3>Workstream 4</h3>
+          <p class="owner">Owner: TBD</p>
+          <p class="ws-placeholder">Add content inside this fence. Use data-key spans for any live numbers.</p>
+        </article>
+        <!-- ===== END: Workstream 4 ===== -->
+      </div>
+    </section>
+    <!-- ===== END: Workstreams ===== -->
+  </main>
+
+  <script src="config.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
