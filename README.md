@@ -64,3 +64,15 @@ One-time setup (full steps at the top of `apps-script/Code.gs`):
 The passcode lives only in Apps Script — never commit it to this repo.
 
 To make another cell editable: add it to `FIELDS` (season-level) or `DAILY_FIELDS` (per game day) in `Code.gs`, paste the updated file into Apps Script, then Deploy → Manage deployments → Edit → New version. The page builds its form from the API, so no HTML/JS changes are needed.
+
+## Shipping changes (one command)
+
+```bash
+./deploy.sh "what changed"
+```
+
+Uploads `apps-script/` to the sheet's Apps Script project, redeploys the web app at the same URL, then commits and pushes (Cloudflare redeploys the site). Uses Google's `clasp` CLI via `npx`.
+
+One-time setup per computer: install Node.js, turn on the Apps Script API at https://script.google.com/home/usersettings, then run `npx @google/clasp@2.4.2 login`. Only people with edit access to the Apps Script project can run the Apps Script part.
+
+One-time sheet updates (schedule import, church rent) are in the sheet's **Kenny League** menu.

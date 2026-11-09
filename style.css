@@ -494,6 +494,8 @@ tfoot td {
   .in-savebar-inner { flex-direction: column; align-items: stretch; }
   .in-savebar-actions .btn { flex: 1; }
 }
+.in-readonly { display: block; padding: 0.5rem 0.6rem; text-align: right; font-variant-numeric: tabular-nums; color: var(--color-muted); background: var(--color-bg); border-radius: 8px; }
+.in-auto { font-size: 0.7rem; font-weight: 600; text-transform: uppercase; background: var(--color-bg); color: var(--color-muted); padding: 0.05rem 0.4rem; border-radius: 999px; margin-left: 0.25rem; }
 /* ===== END: Enter Data page ===== */
 
 /* ===== START: Schedule section ===== */

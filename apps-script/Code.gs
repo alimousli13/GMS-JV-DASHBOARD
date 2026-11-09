@@ -49,6 +49,9 @@ var FIELDS = [
   { key: 'setup_card_fee_txn',      sheet: 'Setup',   cell: 'B23', type: 'money',   panel: 'prices',  group: 'Card processing',      label: 'Card fee per transaction' },
   { key: 'setup_conc_card_share',   sheet: 'Setup',   cell: 'B27', type: 'percent', panel: 'prices',  group: 'Card processing',      label: 'Concession sales paid by card' },
 
+  { key: 'setup_church_rate',       sheet: 'Setup',   cell: 'B51', type: 'money',   panel: 'prices',  group: 'Church rental',        label: 'Church hourly rate' },
+  { key: 'setup_church_hours_game', sheet: 'Setup',   cell: 'B52', type: 'number',  panel: 'prices',  group: 'Church rental',        label: 'Church hours booked per game' },
+
   { key: 'setup_insurance_cost',    sheet: 'Setup',   cell: 'B24', type: 'money',   panel: 'prices',  group: 'Insurance & overhead', label: 'Season insurance cost' },
   { key: 'setup_insurance_refund',  sheet: 'Setup',   cell: 'B25', type: 'money',   panel: 'prices',  group: 'Insurance & overhead', label: 'Expected insurance reimbursement' },
   { key: 'setup_other_season_fixed',sheet: 'Setup',   cell: 'B26', type: 'money',   panel: 'prices',  group: 'Insurance & overhead', label: 'Other season fixed costs' },
@@ -64,7 +67,7 @@ var FIELDS = [
 /* ---------- Weekly rentals (Setup rows 32–41 = weeks 1–10; only weeks in the season are shown) ---------- */
 var RENTAL_COLS = [
   { part: 'court',  col: 'B', label: 'Court rental' },
-  { part: 'church', col: 'C', label: 'Church rental' },
+  { part: 'church', col: 'C', label: 'Church rental', readonly: true }, // = hourly rate × hours booked (formula)
   { part: 'other',  col: 'D', label: 'Other fixed / week' }
 ];
 
@@ -88,6 +91,16 @@ var DAILY_FIELDS = [
 ];
 // Read-only rows shown as the day summary
 var DAY_INFO = { label: 5, dayName: 7, week: 8, date: 9, games: 11, revenue: 35, cost: 71, net: 72 };
+
+/* ======================= Sheet menu ======================= */
+// Adds a "Kenny League" menu to the Google Sheet so one-time updates can be run
+// with a click instead of from the Apps Script editor.
+function onOpen() {
+  SpreadsheetApp.getUi().createMenu('Kenny League')
+    .addItem('Update schedule from file data', 'updateSchedule')
+    .addItem('Recalculate church rent from schedule', 'updateChurchRent')
+    .addToUi();
+}
 
 /* ======================= Web app entry points ======================= */
 
@@ -155,7 +168,7 @@ function buildPayload_(ss) {
   var setupSh = ss.getSheetByName(SHEET.setup);
   var fundSh = ss.getSheetByName(SHEET.funding);
   var grids = {
-    Setup:   { v: setupSh.getRange('A1:D50').getValues(), d: setupSh.getRange('A1:D50').getDisplayValues() },
+    Setup:   { v: setupSh.getRange('A1:D60').getValues(), d: setupSh.getRange('A1:D60').getDisplayValues() },
     Funding: { v: fundSh.getRange('A1:D25').getValues(),  d: fundSh.getRange('A1:D25').getDisplayValues() }
   };
 
@@ -174,7 +187,7 @@ function buildPayload_(ss) {
     RENTAL_COLS.forEach(function (rc) {
       var cell = rc.col + (31 + w), pos = a1_(cell);
       rentals.push({ key: 'rent_w' + w + '_' + rc.part, week: w, part: rc.part, label: 'Week ' + w + ' ' + rc.label,
-                     type: 'money', value: out_('money', grids.Setup.v[pos.r - 1][pos.c - 1], tz) });
+                     type: 'money', readonly: !!rc.readonly, value: out_('money', grids.Setup.v[pos.r - 1][pos.c - 1], tz) });
     });
   }
 
@@ -243,6 +256,7 @@ function buildIndex_(ss) {
   FIELDS.forEach(function (f) { idx[f.key] = { sheet: f.sheet, a1: f.cell, type: f.type, label: f.label }; });
   for (var w = 1; w <= 10; w++) {
     RENTAL_COLS.forEach(function (rc) {
+      if (rc.readonly) return;
       idx['rent_w' + w + '_' + rc.part] = { sheet: SHEET.setup, a1: rc.col + (31 + w), type: 'money', label: 'Week ' + w + ' ' + rc.label };
     });
   }
@@ -433,4 +447,32 @@ function updateSchedule() {
 
   SpreadsheetApp.flush();
   ss.toast('Schedule updated: ' + rows.length + ' games.', 'Kenny League', 8);
+}
+
+
+/* =====================================================================
+   ONE-TIME CHURCH RENT UPDATE — run updateChurchRent() from the editor.
+   Church rent = hourly rate × hours booked, where hours booked =
+   church games that week × hours per game (1 hour slots: 6 PM and 7 PM).
+   Reads the Schedule, so it stays right when games move.
+   Sports complex rent stays a flat weekly input (Setup column B).
+   ===================================================================== */
+function updateChurchRent() {
+  var setup = SpreadsheetApp.getActive().getSheetByName(SHEET.setup);
+  setup.getRange('A51:D52').setValues([
+    ['Church hourly rate', 50, '', '$50/hour at Abundant Grace Church.'],
+    ['Church hours booked per game', 1, '', 'Each game slot is 1 hour (6 PM, 7 PM).']
+  ]);
+  setup.getRange('B51').setNumberFormat('$#,##0.00');
+  setup.getRange('B51:B52').setBackground('#fff2cc'); // yellow = editable, like the rest of Setup
+
+  var formulas = [];
+  for (var r = 32; r <= 41; r++) {
+    formulas.push(['=$B$51*$B$52*COUNTIFS(Schedule!$A$2:$A$1001,A' + r + ',Schedule!$E$2:$E$1001,"Abundant Grace Church")']);
+  }
+  setup.getRange('C32:C41').setFormulas(formulas).setBackground(null);
+  setup.getRange('C31').setValue('Church rental (auto)');
+  setup.getRange('A43').setValue('Court = $1,000/week (flat). Church = hourly rate × hours booked, counted from the Schedule tab.');
+  SpreadsheetApp.flush();
+  SpreadsheetApp.getActive().toast('Church rent now calculated from the schedule.', 'Kenny League', 8);
 }

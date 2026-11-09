@@ -129,6 +129,12 @@
 
   function fieldControl(meta, compact) {
     var key = meta.key;
+    if (meta.readonly) {
+      var ro = el("div", "in-field is-readonly" + (compact ? " is-compact" : ""));
+      ro.appendChild(el("span", "in-readonly", money(state.original[key])));
+      ro.title = "Calculated from the schedule";
+      return ro;
+    }
     var wrap = el("div", "in-field" + (compact ? " is-compact" : ""));
     var id = "f-" + key;
     var value = current(key);
