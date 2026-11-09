@@ -7,3 +7,4 @@ README.md
 node_modules
 .wrangler
 .DS_Store
+apps-script

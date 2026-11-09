@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kenny League — Enter Data</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="inputs-page">
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <nav class="site-nav" aria-label="Site">
+    <div class="site-nav-inner">
+      <a href="index.html">← Dashboard</a>
+      <a href="inputs.html" class="nav-cta" aria-current="page">Enter Data</a>
+    </div>
+  </nav>
+
+  <main id="main" class="page">
+    <header class="page-header">
+      <h1>Enter Data</h1>
+      <p class="subtitle">Changes save straight into the league's Google Sheet. The sheet recalculates and the dashboard updates.</p>
+      <p class="last-updated">Sheet read at: <span id="in-server-time">—</span></p>
+    </header>
+
+    <!-- Passcode -->
+    <section class="card in-lock" id="in-lock">
+      <form id="in-lock-form" class="in-lock-form" autocomplete="off">
+        <label for="in-passcode"><strong>Editing passcode</strong></label>
+        <div class="in-lock-row">
+          <input id="in-passcode" type="password" placeholder="Enter passcode to save changes">
+          <button type="submit" class="btn btn-primary">Unlock</button>
+        </div>
+        <label class="in-remember"><input type="checkbox" id="in-remember" checked> Remember on this device</label>
+      </form>
+      <div id="in-unlocked" class="in-unlocked" hidden>
+        <span>✓ Unlocked for editing</span>
+        <button type="button" class="btn btn-link" id="in-forget">Lock</button>
+      </div>
+    </section>
+
+    <div id="in-status" class="in-status" role="status" aria-live="polite" hidden></div>
+
+    <!-- Tabs -->
+    <div class="in-tabs" role="tablist">
+      <button type="button" role="tab" class="in-tab is-active" data-tab="days">Game Days</button>
+      <button type="button" role="tab" class="in-tab" data-tab="prices">Prices, Costs &amp; Rates</button>
+      <button type="button" role="tab" class="in-tab" data-tab="rentals">Weekly Rentals</button>
+      <button type="button" role="tab" class="in-tab" data-tab="funding">Funding</button>
+    </div>
+
+    <section class="in-panel" id="panel-days" data-panel="days">
+      <div class="card in-day-bar">
+        <button type="button" class="btn" id="in-day-prev" aria-label="Previous day">‹</button>
+        <select id="in-day-select" aria-label="Game day"></select>
+        <button type="button" class="btn" id="in-day-next" aria-label="Next day">›</button>
+      </div>
+      <div class="kpi-grid in-day-summary" id="in-day-summary"></div>
+      <p class="note">Day totals reflect the last save. Prices and costs for every day come from the <em>Prices, Costs &amp; Rates</em> tab.</p>
+      <div id="in-day-fields" class="in-groups"></div>
+    </section>
+
+    <section class="in-panel" id="panel-prices" data-panel="prices" hidden>
+      <div id="in-prices-fields" class="in-groups"></div>
+    </section>
+
+    <section class="in-panel" id="panel-rentals" data-panel="rentals" hidden>
+      <div class="card">
+        <h3>Weekly rentals</h3>
+        <p class="note">Each venue's weekly rent is split across the games played there that week.</p>
+        <div class="table-wrap">
+          <table class="in-rent-table">
+            <thead><tr><th>Week</th><th>Court rental</th><th>Church rental</th><th>Other fixed / week</th></tr></thead>
+            <tbody id="in-rent-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section class="in-panel" id="panel-funding" data-panel="funding" hidden>
+      <p class="note">Enter <strong>running totals</strong>: $500 received, then another $300 → enter $800.</p>
+      <div id="in-funding-fields" class="in-groups"></div>
+    </section>
+
+    <div id="in-loading" class="card in-loading">Loading current values from the sheet…</div>
+  </main>
+
+  <!-- Save bar -->
+  <div class="in-savebar" id="in-savebar">
+    <div class="in-savebar-inner">
+      <span id="in-dirty-count">No unsaved changes</span>
+      <div class="in-savebar-actions">
+        <button type="button" class="btn" id="in-discard" disabled>Discard</button>
+        <button type="button" class="btn btn-primary" id="in-save" disabled>Save changes</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="config.js"></script>
+  <script src="inputs.js"></script>
+</body>
+</html>

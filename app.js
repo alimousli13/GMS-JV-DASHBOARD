@@ -162,21 +162,41 @@
     return map;
   }
 
-  var url = typeof SHEET_CSV_URL === "string" ? SHEET_CSV_URL.trim() : "";
-  if (UNSET_URLS[url]) {
-    showBanner();
-    return;
+  function loadFromCsv() {
+    var url = typeof SHEET_CSV_URL === "string" ? SHEET_CSV_URL.trim() : "";
+    if (UNSET_URLS[url]) {
+      showBanner();
+      return;
+    }
+    fetch(url + (url.indexOf("?") === -1 ? "?" : "&") + "t=" + Date.now())
+      .then(function (res) {
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        return res.text();
+      })
+      .then(function (text) {
+        fill(rowsToMap(parseCSV(text)));
+      })
+      .catch(function () {
+        showBanner();
+      });
   }
 
-  fetch(url + (url.indexOf("?") === -1 ? "?" : "&") + "t=" + Date.now())
-    .then(function (res) {
-      if (!res.ok) throw new Error("HTTP " + res.status);
-      return res.text();
-    })
-    .then(function (text) {
-      fill(rowsToMap(parseCSV(text)));
-    })
-    .catch(function () {
-      showBanner();
-    });
+  // Prefer the Apps Script API (reflects edits instantly); fall back to the published CSV.
+  var api = typeof API_URL === "string" ? API_URL.trim() : "";
+  if (api && api.indexOf("PASTE") !== 0) {
+    fetch(api + (api.indexOf("?") === -1 ? "?" : "&") + "t=" + Date.now())
+      .then(function (res) {
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        return res.json();
+      })
+      .then(function (json) {
+        if (!json || !json.ok || !json.outputs) throw new Error("Bad API response");
+        fill(json.outputs);
+      })
+      .catch(function () {
+        loadFromCsv();
+      });
+  } else {
+    loadFromCsv();
+  }
 })();

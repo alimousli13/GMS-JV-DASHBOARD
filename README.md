@@ -49,3 +49,18 @@ Do not change `app.js` unless you are maintaining the shared loader.
 ## Adding live numbers
 
 To add a number, add a row to the Web tab in the Google Sheet with your workstream prefix (e.g. `ops_`), then add `<span data-key="ops_yourkey">—</span>` in your section. No JS changes needed.
+
+## Owner data entry (Enter Data page)
+
+`inputs.html` lets the owner edit every input — daily quantities and hours, prices, unit costs, rates, weekly rentals and funding totals. Saves go straight into the Google Sheet through a small Apps Script web app; the sheet recalculates and the dashboard shows the new numbers. Every save is logged in the sheet's **Edit Log** tab.
+
+One-time setup (full steps at the top of `apps-script/Code.gs`):
+
+1. Google Sheet → Extensions → Apps Script → paste `apps-script/Code.gs`.
+2. Project Settings → Script properties → add `EDIT_PASSCODE`.
+3. Deploy → New deployment → Web app → Execute as **Me**, access **Anyone**.
+4. Paste the `/exec` URL into `config.js` as `API_URL`.
+
+The passcode lives only in Apps Script — never commit it to this repo.
+
+To make another cell editable: add it to `FIELDS` (season-level) or `DAILY_FIELDS` (per game day) in `Code.gs`, paste the updated file into Apps Script, then Deploy → Manage deployments → Edit → New version. The page builds its form from the API, so no HTML/JS changes are needed.
