@@ -1,0 +1,8 @@
+{
+  // Tells Cloudflare to serve this folder as a static website.
+  "name": "gms-jv-dashboard",
+  "compatibility_date": "2025-09-01",
+  "assets": {
+    "directory": "./"
+  }
+}
