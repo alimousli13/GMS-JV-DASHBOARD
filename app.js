@@ -162,6 +162,12 @@
     return map;
   }
 
+  function scheduleMessage(text) {
+    var body = document.getElementById("sched-body");
+    if (body) body.innerHTML = '<tr><td colspan="6" class="placeholder"></td></tr>';
+    if (body) body.querySelector("td").textContent = text;
+  }
+
   /* ---------- Schedule (from the API's "schedule" list) ---------- */
   function renderSchedule(games) {
     var body = document.getElementById("sched-body");
@@ -243,14 +249,18 @@
         return res.json();
       })
       .then(function (json) {
-        if (!json || !json.ok || !json.outputs) throw new Error("Bad API response");
+        if (!json || !json.ok || !json.outputs) throw new Error((json && json.error) || "bad response");
+        if (!json.schedule) scheduleMessage("Schedule not in the API yet — redeploy Apps Script as a New version.");
         fill(json.outputs);
-        renderSchedule(json.schedule || []);
+        if (json.schedule) renderSchedule(json.schedule);
       })
-      .catch(function () {
+      .catch(function (err) {
+        console.warn("Apps Script API failed, falling back to CSV:", err);
+        scheduleMessage("Schedule unavailable — the Apps Script API didn't respond (" + err.message + ").");
         loadFromCsv();
       });
   } else {
+    scheduleMessage("Schedule needs API_URL set in config.js.");
     loadFromCsv();
   }
 })();
