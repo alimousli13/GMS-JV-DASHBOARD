@@ -76,3 +76,29 @@ Uploads `apps-script/` to the sheet's Apps Script project, redeploys the web app
 One-time setup per computer: install Node.js, turn on the Apps Script API at https://script.google.com/home/usersettings, then run `npx @google/clasp@2.4.2 login`. Only people with edit access to the Apps Script project can run the Apps Script part.
 
 One-time sheet updates (schedule import, church rent) are in the sheet's **Kenny League** menu.
+
+## Team edit workflows
+
+**Golden rules**
+1. `git pull` before you start, every time.
+2. Code lives in this repo. Never edit Code.gs on script.google.com: `./deploy.sh` overwrites it.
+3. Numbers live in the Google Sheet. Never hard-code a dollar amount in HTML.
+
+**One-time setup (each teammate)**
+1. Accept the GitHub collaborator invite.
+2. Clone the repo in Cursor; create a fine-grained token (this repo only, Contents: Read and write) to use as your git password.
+3. Only if you'll change Apps Script: get edit access to the Sheet, install Node.js, turn on the Apps Script API (script.google.com/home/usersettings), run `npx @google/clasp@2.4.2 login`.
+
+| I want to… | Where | Then |
+|---|---|---|
+| Enter game-day numbers, prices, costs, funding | Site → **Enter Data** (passcode) | Nothing; dashboard is live |
+| Fix a formula or add a calculation | Google Sheet | Nothing; live |
+| Show a new number on the dashboard | Sheet **Web** tab: add a row (key, value formula, format) → add `<span data-key="your_key">—</span>` in `index.html` | `git push` |
+| Change layout, text, styling | `index.html`, `style.css` in Cursor | `git push` |
+| Make a new input editable on Enter Data | `apps-script/Code.gs` (`FIELDS` or `DAILY_FIELDS`) | `./deploy.sh "msg"` |
+| Change how saving/loading works | `apps-script/Code.gs`, `app.js`, `inputs.js` | `./deploy.sh "msg"` |
+| Run a one-time sheet update | Sheet → **Kenny League** menu | — |
+
+**If `git push` is rejected** ("fetch first"): run `git pull`, then push again. If git reports a conflict, open the file in Cursor, keep the right lines, delete the `<<<<<<<` / `=======` / `>>>>>>>` markers, then `git add . && git commit -m "Merge" && git push`.
+
+**Before sharing changes with the client:** check the live site after a hard refresh (Cmd + Shift + R).
