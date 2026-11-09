@@ -264,102 +264,77 @@
     loadFromCsv();
   }
 
-  /*
-    Sponsor directory — presentation only.
-    Rows stay empty until a secure read path exists. Do not fill this list
-    from the public GET payload or the published Web CSV. Contact person,
-    email, phone, and notes are private and must not be returned publicly.
-    Follow-up matching compares dates only. It does not total any money.
-  */
-  var SPONSOR_ROWS = [];
-  var SPONSOR_DIRECTORY_READY = false;
 
-  function sponsorTodayIso() {
-    var d = new Date();
-    var month = String(d.getMonth() + 1);
-    var day = String(d.getDate());
-    if (month.length < 2) month = "0" + month;
-    if (day.length < 2) day = "0" + day;
-    return d.getFullYear() + "-" + month + "-" + day;
-  }
-
-  function sponsorFollowUpDue(row) {
-    var follow = String(row.nextFollowUp || "").slice(0, 10);
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(follow)) return false;
-    var status = String(row.status || "");
-    if (status === "Declined" || status === "Received") return false;
-    return follow <= sponsorTodayIso();
-  }
-
-  function initSponsorDirectory() {
-    var body = document.getElementById("sponsor-crm-body");
-    var search = document.getElementById("sponsor-search");
-    var status = document.getElementById("sponsor-status");
-    var followups = document.getElementById("sponsor-followups");
-    if (!body || !search || !status || !followups) return;
-
-    var EMPTY_MESSAGE = "No sponsor records are shown on this public page. Names, follow-up dates, and notes stay off the dashboard until a secure Sponsors connection is approved.";
-    var FOLLOWUP_MESSAGE = "Follow-Ups Due will list sponsors whose next follow-up is today or earlier. That list is not loaded here, so private contact details stay off the public page.";
-
-    function setMessage(text) {
-      body.innerHTML = "";
-      var tr = document.createElement("tr");
-      var td = document.createElement("td");
-      td.colSpan = 6;
-      td.className = "placeholder";
-      td.textContent = text;
-      tr.appendChild(td);
-      body.appendChild(tr);
-    }
-
-    function draw() {
-      if (!SPONSOR_DIRECTORY_READY) {
-        setMessage(followups.getAttribute("aria-pressed") === "true" ? FOLLOWUP_MESSAGE : EMPTY_MESSAGE);
-        return;
-      }
-
-      var query = search.value.trim().toLowerCase();
-      var selected = status.value;
-      var dueOnly = followups.getAttribute("aria-pressed") === "true";
-      var shown = SPONSOR_ROWS.filter(function (row) {
-        if (selected && row.status !== selected) return false;
-        if (dueOnly && !sponsorFollowUpDue(row)) return false;
-        if (!query) return true;
-        var haystack = [row.businessName, row.contactPerson, row.tier, row.status, row.notes].join(" ").toLowerCase();
-        return haystack.indexOf(query) !== -1;
-      });
-
-      if (!shown.length) {
-        setMessage(dueOnly ? "No follow-ups are due for the current filters." : "No sponsors match the current filters.");
-        return;
-      }
-
-      body.innerHTML = "";
-      shown.forEach(function (row) {
-        var tr = document.createElement("tr");
-        [row.businessName, row.contactPerson, row.tier, row.status, row.nextFollowUp, row.notes].forEach(function (value) {
-          var td = document.createElement("td");
-          var text = value == null ? "" : String(value).trim();
-          td.textContent = text || "—";
-          tr.appendChild(td);
-        });
-        body.appendChild(tr);
-      });
-    }
-
-    search.addEventListener("input", draw);
-    status.addEventListener("change", draw);
-    followups.addEventListener("click", function () {
-      var pressed = followups.getAttribute("aria-pressed") === "true";
-      followups.setAttribute("aria-pressed", pressed ? "false" : "true");
-      draw();
-    });
-
-    setMessage("Loading sponsor directory…");
-    window.setTimeout(function () {
-      draw();
-    }, 0);
-  }
-
-  initSponsorDirectory();
 })();
+
+/* START: Sponsor Pipeline — authenticated requests only */
+(function () {
+  var rows = [], passcode = '', editing = null, pending = false;
+  var byId = function(id) { return document.getElementById(id); };
+  if (!byId('sponsor-unlock')) return;
+  var form = byId('sponsor-editor'), keys = ['business','contact','communication','stage','followup','notes'];
+  function message(text) { byId('sponsor-message').textContent = text; }
+  async function request(action, extra) {
+    if (typeof API_URL !== 'string' || !API_URL) throw new Error('Dashboard API is not configured.');
+    var response = await fetch(API_URL, {method:'POST', body:JSON.stringify(Object.assign({action:action,passcode:passcode},extra || {}))});
+    if (!response.ok) throw new Error('Connection failed. Please retry.');
+    var result = await response.json();
+    if (!result.ok) throw new Error(result.error || 'Request failed.');
+    return result;
+  }
+  function draw() {
+    var body = byId('sponsor-crm-body'); body.replaceChildren();
+    var q = byId('sponsor-search').value.trim().toLowerCase();
+    var status = byId('sponsor-status').value, due = byId('sponsor-followups').getAttribute('aria-pressed') === 'true';
+    var today = new Date(), iso = today.getFullYear()+'-'+String(today.getMonth()+1).padStart(2,'0')+'-'+String(today.getDate()).padStart(2,'0');
+    var shown = rows.filter(function(row) {
+      return (!q || keys.map(function(k){return row[k] || '';}).join(' ').toLowerCase().includes(q)) &&
+        (!status || row.stage === status) && (!due || (row.followup && row.followup <= iso && !/^(declined|closed|received)$/i.test(row.stage)));
+    });
+    shown.forEach(function(row) {
+      var tr = document.createElement('tr');
+      keys.forEach(function(k){ var td=document.createElement('td'); td.textContent=row[k] || '—'; tr.appendChild(td); });
+      var td=document.createElement('td'), button=document.createElement('button');
+      button.type='button'; button.className='btn'; button.textContent='Edit';
+      button.addEventListener('click',function(){openEditor(row);}); td.appendChild(button); tr.appendChild(td); body.appendChild(tr);
+    });
+    if (!shown.length) {var tr=document.createElement('tr'),td=document.createElement('td');td.colSpan=7;td.textContent='No sponsors match these filters.';tr.appendChild(td);body.appendChild(tr);}
+  }
+  function load(result) {
+    rows=result.sponsors;
+    var statuses = Array.from(new Set(rows.map(function(r){return r.stage;}).filter(Boolean))).sort();
+    var select=byId('sponsor-status'); select.replaceChildren(new Option('All statuses',''));
+    byId('sponsor-stages').replaceChildren();
+    statuses.forEach(function(s){select.appendChild(new Option(s,s));byId('sponsor-stages').appendChild(new Option(s,s));});
+    draw();
+  }
+  function openEditor(row) {
+    editing=row || null;
+    keys.forEach(function(k){form.elements[k].value=row ? row[k] || '' : '';});
+    byId('sponsor-editor-title').textContent=row ? 'Edit sponsor' : 'Add sponsor';
+    form.hidden=false;form.elements.business.focus();
+  }
+  byId('sponsor-unlock').addEventListener('submit',async function(e){
+    e.preventDefault(); if(pending)return; pending=true;
+    passcode=byId('sponsor-passcode').value; message('Loading tracker…');
+    try {load(await request('sponsors_list'));byId('sponsor-private').hidden=false;byId('sponsor-unlock').hidden=true;byId('sponsor-lock').hidden=false;byId('sponsor-passcode').value='';message('Tracker unlocked.');}
+    catch(err){passcode='';message(err.message);}finally{pending=false;}
+  });
+  byId('sponsor-lock').addEventListener('click',function(){
+    if(pending)return;passcode='';rows=[];editing=null;form.reset();form.hidden=true;
+    byId('sponsor-crm-body').replaceChildren();byId('sponsor-private').hidden=true;byId('sponsor-unlock').hidden=false;byId('sponsor-lock').hidden=true;message('Tracker locked.');
+  });
+  form.addEventListener('submit',async function(e){
+    e.preventDefault();if(pending)return;pending=true;
+    var record={};keys.forEach(function(k){record[k]=form.elements[k].value;});
+    var buttons=form.querySelectorAll('button');buttons.forEach(function(b){b.disabled=true;});
+    try {load(await request('sponsors_save',{record:record,row:editing ? editing.row : null,version:editing ? editing.version : null}));form.hidden=true;editing=null;message('Sponsor saved to Google Sheets.');}
+    catch(err){message(err.message);}finally{pending=false;buttons.forEach(function(b){b.disabled=false;});}
+  });
+  byId('sponsor-add').addEventListener('click',function(){openEditor(null);});
+  byId('sponsor-cancel').addEventListener('click',function(){form.hidden=true;});
+  byId('sponsor-search').addEventListener('input',draw);
+  byId('sponsor-status').addEventListener('change',draw);
+  byId('sponsor-followups').addEventListener('click',function(){this.setAttribute('aria-pressed',this.getAttribute('aria-pressed')==='true'?'false':'true');draw();});
+})();
+/* END: Sponsor Pipeline */

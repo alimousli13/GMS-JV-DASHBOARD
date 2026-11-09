@@ -679,3 +679,15 @@ tfoot td {
   }
 }
 /* ===== END: Sponsorship Management Hub ===== */
+
+/* START: Sponsor Pipeline editor */
+#sponsors [hidden] { display:none !important; }
+#sponsors .sponsor-lock { margin-bottom:var(--space-md); }
+#sponsors #sponsor-unlock { display:flex; flex-wrap:wrap; align-items:center; gap:0.75rem; }
+#sponsors .sponsor-edit-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); gap:1rem; margin-bottom:1rem; }
+#sponsors .sponsor-edit-grid label { display:grid; gap:0.35rem; }
+#sponsors input, #sponsors textarea { font:inherit; padding:0.55rem; border:1px solid var(--color-border); border-radius:8px; max-width:100%; }
+#sponsors textarea { min-height:6rem; }
+#sponsors #sponsor-editor { margin:1rem 0; }
+#sponsors .sponsor-table td:nth-child(6) { white-space:pre-wrap; min-width:12rem; }
+/* END: Sponsor Pipeline editor */

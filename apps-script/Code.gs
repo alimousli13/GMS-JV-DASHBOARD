@@ -120,6 +120,12 @@ function doPost(e) {
     if (!expected) return json_({ ok: false, error: 'EDIT_PASSCODE is not set in Apps Script → Project Settings → Script properties.' });
     if (String(body.passcode || '') !== expected) return json_({ ok: false, error: 'Wrong passcode.' });
 
+    if (body.action === 'sponsors_list' || body.action === 'sponsors_save') {
+      lock.waitLock(20000);
+      return json_(sponsorHandle_(body));
+    }
+    if (body.action) return json_({ ok: false, error: 'Unknown action.' });
+
     var ss = SpreadsheetApp.getActive();
     var changes = Array.isArray(body.changes) ? body.changes : [];
     var index = buildIndex_(ss);
@@ -476,3 +482,66 @@ function updateChurchRent() {
   SpreadsheetApp.flush();
   SpreadsheetApp.getActive().toast('Church rent now calculated from the schedule.', 'Kenny League', 8);
 }
+
+/* START: Sponsor Pipeline — never included in public GET */
+function sponsorSheet_() {
+  var ss = SpreadsheetApp.openById('1pjhMwRuXupvlYiQ9m_3mT_wwKfWOLEVtDIo1NXM8YhA');
+  var sh = ss.getSheetByName('Sponsor Pipeline');
+  if (!sh || sh.getSheetId() !== 1061870498) throw new Error('Sponsor Pipeline tab does not match the configured tracker.');
+  var expected = ['Business / Sponsor','Contact','Email / Phone','Pledged $','Received $','Stage','Next Follow-up','Notes'];
+  var normalize = function(s) {return String(s).toLowerCase().replace(/[^a-z0-9]/g,'');};
+  var values = sh.getDataRange().getDisplayValues(), header = -1;
+  for (var r=0;r<Math.min(values.length,20);r++) {
+    if (expected.every(function(s,c){return normalize(values[r][c])===normalize(s);})) {header=r+1;break;}
+  }
+  if (header < 0) throw new Error('Tracker headers differ from the approved A–H mapping. Nothing was changed.');
+  return {sheet:sh,header:header};
+}
+function sponsorVersion_(values) {
+  return Utilities.base64EncodeWebSafe(Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256,JSON.stringify(values)));
+}
+function sponsorList_(info) {
+  var sh=info.sheet, last=sh.getLastRow(), result=[];
+  if(last<=info.header)return result;
+  var data=sh.getRange(info.header+1,1,last-info.header,8).getValues();
+  data.forEach(function(v,i){
+    if(!v[0])return;
+    result.push({row:info.header+1+i,version:sponsorVersion_(v),business:String(v[0] || ''),contact:String(v[1] || ''),
+      communication:String(v[2] || ''),stage:String(v[5] || ''),followup:v[6] instanceof Date ? Utilities.formatDate(v[6],sh.getParent().getSpreadsheetTimeZone(),'yyyy-MM-dd') : String(v[6] || ''),notes:String(v[7] || '')});
+  });
+  return result;
+}
+function sponsorHandle_(body) {
+  var info=sponsorSheet_(),sh=info.sheet;
+  if(body.action==='sponsors_save'){
+    var record=body.record || {}, cols={business:1,contact:2,communication:3,stage:6,followup:7,notes:8}, clean={};
+    Object.keys(cols).forEach(function(k){
+      var v=String(record[k] == null ? '' : record[k]).trim(),limit=k==='notes'?4000:k==='communication'?300:200;
+      if(v.length>limit)throw new Error(k+' is too long.');
+      if(/^[=+@\-]/.test(v))throw new Error(k+' cannot begin with a formula character.');
+      clean[k]=v;
+    });
+    if(!clean.business)throw new Error('Business / Sponsor is required.');
+    if(clean.followup){
+      if(!/^\d{4}-\d{2}-\d{2}$/.test(clean.followup))throw new Error('Use a valid follow-up date.');
+      var parts=clean.followup.split('-').map(Number),date=new Date(parts[0],parts[1]-1,parts[2]);
+      if(date.getFullYear()!==parts[0] || date.getMonth()!==parts[1]-1 || date.getDate()!==parts[2])throw new Error('Invalid date.');
+    }
+    var row=body.row == null ? sh.getLastRow()+1 : Number(body.row);
+    if(!Number.isInteger(row)||row<=info.header||row>sh.getLastRow()+1)throw new Error('Invalid sponsor row.');
+    if(body.row != null && sponsorVersion_(sh.getRange(row,1,1,8).getValues()[0])!==body.version)throw new Error('This sponsor changed in the spreadsheet. Lock and unlock the tracker to reload before editing.');
+    Object.keys(cols).forEach(function(k){
+      if(sh.getRange(row,cols[k]).getFormula())throw new Error('A target cell contains a formula. Nothing was changed.');
+    });
+    var before=sh.getRange(row,1,1,8).getValues()[0];
+    // Write only A–C and F–H; existing financial cells D–E are never written.
+    sh.getRange(row,1,1,3).setValues([[clean.business,clean.contact,clean.communication]]);
+    sh.getRange(row,6,1,3).setValues([[clean.stage,clean.followup ? date : '',clean.notes]]);
+    sh.getRange(row,7).setNumberFormat('yyyy-mm-dd');
+    var log=getLogSheet_(sh.getParent());
+    log.appendRow([new Date(),'Sponsor Pipeline!'+row,'Sponsor outreach edit',JSON.stringify(before),JSON.stringify(sh.getRange(row,1,1,8).getValues()[0])]);
+    SpreadsheetApp.flush();
+  }
+  return {ok:true,sponsors:sponsorList_(info)};
+}
+/* END: Sponsor Pipeline */
