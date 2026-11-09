@@ -1,104 +1,118 @@
 # Kenny League — Season Dashboard
 
-Client dashboard for the Gainesville JV Basketball League (“Kenny League”). It replaces the Google Sheets P&L tracker as the viewing layer for season finance, schedule, funding, and team workstreams.
+Client dashboard for the Gainesville JV Basketball League ("Kenny League"), built by our REM consulting team.
 
-The Google Sheet does all calculations. This site never totals or derives numbers; it only displays values the sheet already computed.
+- **Live site:** https://gms-jv-dashboard.alimousli13.workers.dev (hosted on Cloudflare; every push to `main` redeploys it)
+- **Owner data entry:** `/inputs.html` (the "Enter Data" button), protected by a passcode
+- **Source of truth for all numbers and math:** the Google Sheet "Kenny League — Season Profit & Loss Tracker"
 
-## Open locally
+---
 
-1. Double-click `index.html`, or open that file in a browser.
-2. Without a published CSV URL, every figure stays as “—” and a banner explains that live data is unavailable.
+## Rules for AI assistants (Claude, Cursor, ChatGPT, etc.)
 
-To load live sheet values, browsers often block `fetch` from `file://`. If that happens, serve the folder over HTTP, for example:
+If you are an AI helping a teammate edit this repo, these rules are binding. If a request would break one, say so and propose the compliant alternative instead.
 
-```bash
-python3 -m http.server 8000
+### DO
+1. **Keep all math in the Google Sheet.** The website only *displays* values the sheet already calculated, and *writes inputs* into yellow input cells. If a new number is needed, add a formula in the sheet plus a row in the sheet's **Web** tab, then display it by key.
+2. **Display numbers with `data-key` spans**, e.g. `<span class="num placeholder" data-key="season_net">—</span>`. `app.js` fills every `[data-key]` element automatically from the API. Add `data-signed` for values that should turn green/red.
+3. **Keep it plain HTML, CSS, and vanilla JavaScript.** No frameworks, no npm packages in the site, no build step, no CDNs. Files are served exactly as they are in the repo.
+4. **Edit Apps Script code only in `apps-script/Code.gs` in this repo**, then ship it with `./deploy.sh "message"`.
+5. **When adding an editable input**, add an entry to `FIELDS` (season-level, Setup/Funding tabs) or `DAILY_FIELDS` (per game day, Daily Tracker) in `Code.gs`. The Enter Data page builds its forms from the API, so no HTML/JS change is needed.
+6. **Check every sheet cell address against the actual sheet** before using it (see "Sheet map" below). Addresses are hard-coded in `Code.gs`.
+7. **Add any new file that must not be public to `.assetsignore`** (Cloudflare publishes everything else in the repo root).
+8. **Tell the human which command to run** when you're done: `git push` for site-only changes, `./deploy.sh "message"` if `apps-script/` changed, and whether a one-time sheet update must be run from the sheet's **Kenny League** menu.
+9. **Keep scoped CSS**: shared styles first in `style.css`, page/section-specific styles in their own commented `START`/`END` blocks.
+
+### DON'T
+1. **Don't hard-code dollar amounts, counts, prices, or dates in HTML/JS.** Use `—` as the placeholder and a `data-key`.
+2. **Don't calculate, total, or derive numbers in JavaScript** (no summing, no multiplying price × quantity). Formatting only (currency, %, commas).
+3. **Don't edit Code.gs on script.google.com.** `./deploy.sh` overwrites it with the repo version. (If someone did, run `npx @google/clasp@2.4.2 pull` first to recover it.)
+4. **Don't write to formula cells from the website.** Only yellow input cells. Church rent (Setup C32:C41) is a formula; don't make it editable.
+5. **Don't rename or delete existing Web-tab keys or `FIELDS`/`DAILY_FIELDS` keys** without updating every place that uses them (sheet Web tab, `index.html`, `Code.gs`).
+6. **Don't put secrets in the repo.** The edit passcode lives only in Apps Script → Project Settings → Script properties (`EDIT_PASSCODE`). Never commit tokens or passwords.
+7. **Don't change `config.js` URLs, `.clasp.json`, `wrangler.jsonc`, `.assetsignore`, or `deploy.sh`** unless the task is specifically about deployment.
+8. **Don't add Google sign-in, databases, or other services** without asking the team. The architecture is intentionally Sheet + Apps Script + static site.
+9. **Don't run destructive git commands** (`git reset --hard`, `git push --force`, deleting branches) for a teammate.
+
+---
+
+## How it works
+
+```
+Google Sheet (all formulas)  ──►  Apps Script web app (apps-script/Code.gs)
+        ▲                               │  GET  → JSON: Web-tab outputs + current inputs + schedule
+        │  POST (passcode) writes       │  POST → writes inputs, logs to "Edit Log" tab, returns fresh JSON
+        │  yellow input cells           ▼
+        └──────────────  Static site on Cloudflare (index.html, inputs.html)
 ```
 
-Then open `http://localhost:8000`.
+- **Reading:** `app.js` calls the Apps Script URL (`API_URL` in `config.js`) and fills `[data-key]` elements. If that fails it falls back to the published CSV of the Web tab (`SHEET_CSV_URL`), which can lag ~5 minutes and has no schedule.
+- **Writing:** `inputs.js` sends only changed fields + passcode. Apps Script validates everything (numbers, whole numbers, no negatives, percents 0–100) and writes nothing if any field is invalid.
+- **Every save is logged** in the sheet's **Edit Log** tab (time, cell, old → new).
 
-## Connect the Google Sheet
+## File map
 
-1. Publish the Web tab as CSV.
-2. Paste the URL in `config.js`:
+| File | What it is | Public on the site? |
+|---|---|---|
+| `index.html` | Dashboard: Overview, Season P&L, Weekly Results, Setup, Schedule, Funding, Sponsors | Yes |
+| `inputs.html` / `inputs.js` | Enter Data page (passcode, tabs: Game Days, Prices/Costs/Rates, Weekly Rentals, Funding) | Yes |
+| `app.js` | Dashboard loader: fetch API → fill `data-key`s, render schedule; CSV fallback | Yes |
+| `style.css` | All styles; CSS variables at top | Yes |
+| `config.js` | `API_URL` (Apps Script `/exec`) and `SHEET_CSV_URL` (published Web tab) | Yes (URLs aren't secret; writes need the passcode) |
+| `apps-script/Code.gs` | The API + one-time sheet updates + "Kenny League" sheet menu | No |
+| `apps-script/appsscript.json` | Apps Script manifest (web app: execute as owner, anyone can call) | No |
+| `deploy.sh` | One-command ship: clasp push → redeploy same URL → git push | No |
+| `.clasp.json` | Links `apps-script/` to the sheet's Apps Script project | No |
+| `wrangler.jsonc`, `.assetsignore` | Cloudflare config; `.assetsignore` lists files kept off the website | No |
 
-```js
-const SHEET_CSV_URL = "PASTE_URL_HERE";
-```
+## Sheet map (cell addresses used in Code.gs)
 
-Replace `PASTE_URL_HERE` with the published CSV link. Expected columns: `section`, `key`, `label`, `value`, `format` (`currency`, `number`, `percent`, or `text`).
+| Tab | What | Key cells |
+|---|---|---|
+| **Season** | Season P&L summary (formulas only) | B6 net income, B17–B24 revenue, B28–B39 costs, A44:H53 weekly |
+| **Setup** | Season inputs (yellow) | B5 teams, B6 fee, B7 sponsor portion, B11–B13 refs/scorekeeper, B14–B15 admission, B16–B18 prices, B19–B21 unit costs, B22–B23 card fees, B24–B26 insurance/overhead, B27 concession card share, B32:B41 court rent/week (input), **C32:C41 church rent (formula)**, D32:D41 other fixed/week, B51 church $/hour, B52 church hours per game |
+| **Daily Tracker** | One column per game day, **C–V = days 1–20** (W1 Tue … W5 Fri) | Inputs: row 10 completed, 16 cash adm, 19 card adm, 24/27/30 Gatorade L/S + Skittles sold, 34 other revenue, 48 scorekeeper hrs, 51–52 other staff hrs/rate, 54–55 supplies qty/cost, 57 other expenses, 59 card txns. Formulas: 5 label, 9 date, 11 games, 35 revenue, 71 cost, 72 net |
+| **Funding** | Running totals (yellow) | B8 sponsor payments, B9 player payments, B15 extra sponsorship, B16 other funding, B19 insurance refund |
+| **Schedule** | One row per game | A week, B day (full name, e.g. "Tuesday"), C time, D court, E location ("Alachua Sports Complex" / "Abundant Grace Church"), F team 1, G team 2, H matchup, I date |
+| **Web** | Export list for the site: `section, key, label, value, format` | `format` ∈ currency, number, percent, text |
+| **Edit Log** | Auto-created audit trail of website saves | — |
 
-## How to contribute
-
-Edit only your fenced HTML/CSS section so teammates are not blocked.
-
-```bash
-git pull
-```
-
-Change markup between your `<!-- ===== START: … ===== -->` and `<!-- ===== END: … ===== -->` comments in `index.html`, and only your fenced block in `style.css` (for example `.ws-finance-*` or `.ws-ops-*`).
-
-```bash
-git add index.html style.css
-git commit -m "Update finance workstream section"
-git push
-```
-
-Do not change `app.js` unless you are maintaining the shared loader.
-
-## Adding live numbers
-
-To add a number, add a row to the Web tab in the Google Sheet with your workstream prefix (e.g. `ops_`), then add `<span data-key="ops_yourkey">—</span>` in your section. No JS changes needed.
-
-## Owner data entry (Enter Data page)
-
-`inputs.html` lets the owner edit every input — daily quantities and hours, prices, unit costs, rates, weekly rentals and funding totals. Saves go straight into the Google Sheet through a small Apps Script web app; the sheet recalculates and the dashboard shows the new numbers. Every save is logged in the sheet's **Edit Log** tab.
-
-One-time setup (full steps at the top of `apps-script/Code.gs`):
-
-1. Google Sheet → Extensions → Apps Script → paste `apps-script/Code.gs`.
-2. Project Settings → Script properties → add `EDIT_PASSCODE`.
-3. Deploy → New deployment → Web app → Execute as **Me**, access **Anyone**.
-4. Paste the `/exec` URL into `config.js` as `API_URL`.
-
-The passcode lives only in Apps Script — never commit it to this repo.
-
-To make another cell editable: add it to `FIELDS` (season-level) or `DAILY_FIELDS` (per game day) in `Code.gs`, paste the updated file into Apps Script, then Deploy → Manage deployments → Edit → New version. The page builds its form from the API, so no HTML/JS changes are needed.
-
-## Shipping changes (one command)
-
-```bash
-./deploy.sh "what changed"
-```
-
-Uploads `apps-script/` to the sheet's Apps Script project, redeploys the web app at the same URL, then commits and pushes (Cloudflare redeploys the site). Uses Google's `clasp` CLI via `npx`.
-
-One-time setup per computer: install Node.js, turn on the Apps Script API at https://script.google.com/home/usersettings, then run `npx @google/clasp@2.4.2 login`. Only people with edit access to the Apps Script project can run the Apps Script part.
-
-One-time sheet updates (schedule import, church rent) are in the sheet's **Kenny League** menu.
+Daily Tracker formulas depend on Schedule's column layout and exact day/location spellings. Keep them.
 
 ## Team edit workflows
 
-**Golden rules**
-1. `git pull` before you start, every time.
-2. Code lives in this repo. Never edit Code.gs on script.google.com: `./deploy.sh` overwrites it.
-3. Numbers live in the Google Sheet. Never hard-code a dollar amount in HTML.
+**Golden rules:** `git pull` before you start · code lives in this repo · numbers live in the Sheet.
 
-**One-time setup (each teammate)**
-1. Accept the GitHub collaborator invite.
-2. Clone the repo in Cursor; create a fine-grained token (this repo only, Contents: Read and write) to use as your git password.
-3. Only if you'll change Apps Script: get edit access to the Sheet, install Node.js, turn on the Apps Script API (script.google.com/home/usersettings), run `npx @google/clasp@2.4.2 login`.
-
-| I want to… | Where | Then |
+| I want to… | Where | Then run |
 |---|---|---|
-| Enter game-day numbers, prices, costs, funding | Site → **Enter Data** (passcode) | Nothing; dashboard is live |
-| Fix a formula or add a calculation | Google Sheet | Nothing; live |
-| Show a new number on the dashboard | Sheet **Web** tab: add a row (key, value formula, format) → add `<span data-key="your_key">—</span>` in `index.html` | `git push` |
-| Change layout, text, styling | `index.html`, `style.css` in Cursor | `git push` |
-| Make a new input editable on Enter Data | `apps-script/Code.gs` (`FIELDS` or `DAILY_FIELDS`) | `./deploy.sh "msg"` |
-| Change how saving/loading works | `apps-script/Code.gs`, `app.js`, `inputs.js` | `./deploy.sh "msg"` |
+| Enter game-day numbers, prices, costs, funding | Site → **Enter Data** (passcode) | nothing (live) |
+| Fix a formula / add a calculation | Google Sheet | nothing (live) |
+| Show a new number on the dashboard | Sheet **Web** tab row (key + formula + format), then `<span data-key="key">—</span>` in `index.html` | `git push` |
+| Change layout, text, styling | `index.html`, `style.css` | `git push` |
+| Make a new input editable on Enter Data | `apps-script/Code.gs` (`FIELDS` / `DAILY_FIELDS`) | `./deploy.sh "msg"` |
+| Change how loading/saving works | `apps-script/Code.gs`, `app.js`, `inputs.js` | `./deploy.sh "msg"` |
 | Run a one-time sheet update | Sheet → **Kenny League** menu | — |
 
-**If `git push` is rejected** ("fetch first"): run `git pull`, then push again. If git reports a conflict, open the file in Cursor, keep the right lines, delete the `<<<<<<<` / `=======` / `>>>>>>>` markers, then `git add . && git commit -m "Merge" && git push`.
+Commands:
+```bash
+git pull                                              # always first
+git add . && git commit -m "what changed" && git push # site-only changes
+./deploy.sh "what changed"                            # anything in apps-script/ (also pushes the site)
+```
 
-**Before sharing changes with the client:** check the live site after a hard refresh (Cmd + Shift + R).
+## Setup
+
+**Every teammate:** accept the GitHub collaborator invite → clone in Cursor → create a fine-grained GitHub token (only this repo, Contents: Read and write) and use it as the password when git asks.
+
+**Only if you'll change Apps Script:** get edit access to the Google Sheet → install Node.js → turn on the Apps Script API at https://script.google.com/home/usersettings → `npx @google/clasp@2.4.2 login`.
+
+**Run locally:** `python3 -m http.server 8000`, open http://localhost:8000.
+
+## Troubleshooting
+
+- **Push rejected ("fetch first"):** `git pull`, then push again.
+- **Merge conflict:** open the file, keep the right lines, delete the `<<<<<<<` / `=======` / `>>>>>>>` markers, then `git add . && git commit -m "Merge" && git push`.
+- **Site shows old content:** hard refresh (Cmd + Shift + R); check Cloudflare → Workers & Pages → gms-jv-dashboard → Deployments.
+- **Numbers show "—" / banner "Live data unavailable":** open the `API_URL` in a browser; it should start with `{"ok":true`. If not, check Apps Script → Executions for errors.
+- **Schedule box shows a message:** it says why (API not responding, or Apps Script needs redeploying via `./deploy.sh`).
+- **Enter Data says "Wrong passcode":** the passcode is in Apps Script → Project Settings → Script properties → `EDIT_PASSCODE`.

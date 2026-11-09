@@ -10,3 +10,5 @@ node_modules
 apps-script
 .clasp.json
 deploy.sh
+AGENTS.md
+CLAUDE.md
