@@ -439,24 +439,85 @@
 
     <!-- ===== START: Sponsors ===== -->
     <section id="sponsors" class="section">
-      <h2>Sponsors</h2>
-      <div class="kpi-grid">
-        <article class="kpi">
-          <p class="kpi-label">Total sponsors</p>
-          <p class="kpi-value num placeholder" data-key="sponsors_total">—</p>
-        </article>
-        <article class="kpi">
-          <p class="kpi-label">Prospect</p>
-          <p class="kpi-value num placeholder" data-key="sponsors_prospect">—</p>
-        </article>
-        <article class="kpi">
-          <p class="kpi-label">Pledged</p>
-          <p class="kpi-value num placeholder" data-key="sponsors_pledged">—</p>
-        </article>
-        <article class="kpi">
-          <p class="kpi-label">Received</p>
-          <p class="kpi-value num placeholder" data-key="sponsors_received">—</p>
-        </article>
+      <h2>Sponsor Outreach</h2>
+      <div class="card sponsor-lock">
+        <form id="sponsor-unlock">
+          <label for="sponsor-passcode">Sponsor management passcode</label>
+          <input id="sponsor-passcode" type="password" autocomplete="current-password" required>
+          <button class="btn btn-primary">Unlock tracker</button>
+        </form>
+        <button id="sponsor-lock" class="btn" type="button" hidden>Lock tracker</button>
+        <p id="sponsor-message" role="status">Unlock to view and edit sponsor contacts.</p>
+      </div>
+      <div id="sponsor-private" hidden>
+      <button id="sponsor-add" class="btn btn-primary" type="button">Add sponsor</button>
+      <form id="sponsor-editor" class="card" hidden>
+        <h3 id="sponsor-editor-title">Edit sponsor</h3>
+        <div class="sponsor-edit-grid">
+          <label>Business / Sponsor<input name="business" required maxlength="200"></label>
+          <label>Contact<input name="contact" maxlength="200"></label>
+          <label>Email / Phone<input name="communication" maxlength="300"></label>
+          <label>Stage<input name="stage" maxlength="100" list="sponsor-stages"></label>
+          <label>Next follow-up<input name="followup" type="date"></label>
+          <label>Notes<textarea name="notes" maxlength="4000"></textarea></label>
+        </div>
+        <datalist id="sponsor-stages"></datalist>
+        <button class="btn btn-primary" type="submit">Save sponsor</button>
+        <button class="btn" id="sponsor-cancel" type="button">Cancel</button>
+      </form>
+      <h3 class="sponsor-heading">Sponsor CRM &amp; Outreach Pipeline</h3>
+      <div class="card sponsor-crm">
+        <div class="sponsor-filters">
+          <label for="sponsor-search">Search sponsors
+            <input id="sponsor-search" type="search" placeholder="Business, contact, or notes" autocomplete="off">
+          </label>
+          <label for="sponsor-status">Outreach status
+            <select id="sponsor-status">
+              <option value="">All statuses</option>
+              <option value="Prospect">Prospect</option>
+              <option value="Contacted">Contacted</option>
+              
+              <option value="Committed">Committed</option>
+              
+              <option value="Declined">Declined</option>
+            </select>
+          </label>
+          <button type="button" class="btn" id="sponsor-followups" aria-pressed="false">Follow-Ups Due</button>
+        </div>
+        <div class="table-wrap">
+          <table class="sponsor-table">
+            <caption class="sponsor-caption">Sponsor directory</caption>
+            <thead>
+              <tr>
+                <th scope="col">Business name</th>
+                <th scope="col">Contact person</th>
+                <th scope="col">Email / Phone</th>
+                <th scope="col">Outreach status</th>
+                <th scope="col">Next follow-up</th>
+                <th scope="col">Notes</th><th scope="col">Action</th>
+              </tr>
+            </thead>
+            <tbody id="sponsor-crm-body">
+              <tr>
+                <td colspan="6" class="placeholder">Loading sponsor directory…</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      </div>
+      <h3 class="sponsor-heading">Outreach Resource Center</h3>
+      <!-- Add another resource by copying a link below. The grid wraps a third card automatically. -->
+      <div class="sponsor-resource-grid">
+        <a class="card sponsor-resource" href="https://docs.google.com/document/d/1y1FXJgGzikpaiGQrJhbI_9LvJQBFaKvs63prGwcVMIY/edit" target="_blank" rel="noopener noreferrer">
+          <h3>Sponsorship Document</h3>
+          <p>Google Doc <span class="sponsor-resource-hint">opens in a new tab</span></p>
+        </a>
+        <a class="card sponsor-resource" href="assets/gms-jv-sponsorship-package.pdf" target="_blank" rel="noopener noreferrer">
+          <h3>2026 Sponsorship Package</h3>
+          <p>PDF · Tiers and visibility reports <span class="sponsor-resource-hint">opens in a new tab</span></p>
+        </a>
       </div>
     </section>
     <!-- ===== END: Sponsors ===== -->

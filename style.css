@@ -507,3 +507,187 @@ tfoot td {
 .sched-table tr.sched-newday td { border-top: 2px solid var(--color-border); }
 .sched-hl { font-weight: 700; color: var(--color-navy); }
 /* ===== END: Schedule section ===== */
+
+/* ===== START: Sponsorship Management Hub ===== */
+.sponsor-heading {
+  margin: var(--space-lg) 0 var(--space-md);
+  color: var(--color-navy);
+  font-size: 1.05rem;
+}
+
+.section > .sponsor-heading:first-of-type {
+  margin-top: 0;
+}
+
+.sponsor-overview-note {
+  margin-top: var(--space-md);
+}
+
+.sponsor-existing {
+  margin-top: var(--space-md);
+}
+
+.sponsor-existing .sponsor-heading {
+  margin: 0 0 var(--space-sm);
+  font-size: 0.95rem;
+}
+
+.sponsor-existing-list {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-md);
+  margin: 0;
+}
+
+.sponsor-existing-list div {
+  min-width: 0;
+}
+
+.sponsor-existing-list dt {
+  margin: 0 0 var(--space-xs);
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--color-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.sponsor-existing-list dd {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+
+.sponsor-crm {
+  padding-bottom: var(--space-sm);
+}
+
+.sponsor-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: var(--space-md);
+  margin-bottom: var(--space-md);
+}
+
+.sponsor-filters label {
+  display: grid;
+  gap: 0.2rem;
+  flex: 1 1 12rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--color-muted);
+}
+
+.sponsor-filters input,
+.sponsor-filters select {
+  font: inherit;
+  font-size: 0.95rem;
+  font-weight: 400;
+  color: var(--color-text);
+  width: 100%;
+  padding: 0.4rem 0.5rem;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-surface);
+}
+
+.sponsor-filters input:focus,
+.sponsor-filters select:focus,
+.sponsor-filters .btn:focus-visible,
+.sponsor-resource:focus-visible {
+  outline: 2px solid var(--color-navy);
+  outline-offset: 2px;
+}
+
+.sponsor-filters .btn {
+  flex: 0 0 auto;
+}
+
+.sponsor-filters .btn[aria-pressed="true"] {
+  background: var(--color-navy);
+  border-color: var(--color-navy);
+  color: #fff;
+}
+
+.sponsor-caption {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.sponsor-table th,
+.sponsor-table td {
+  white-space: nowrap;
+}
+
+.sponsor-table td:last-child {
+  white-space: normal;
+  min-width: 12rem;
+}
+
+.sponsor-resource-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+  gap: var(--space-md);
+}
+
+.sponsor-resource {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+  border-top: 3px solid var(--color-navy);
+}
+
+.sponsor-resource:hover,
+.sponsor-resource:focus {
+  border-color: var(--color-navy);
+  box-shadow: 0 4px 12px rgba(27, 54, 93, 0.12);
+}
+
+.sponsor-resource h3 {
+  margin: 0 0 var(--space-xs);
+  color: var(--color-navy);
+  font-size: 1.05rem;
+}
+
+.sponsor-resource p {
+  margin: 0;
+  color: var(--color-muted);
+  font-size: 0.9rem;
+}
+
+.sponsor-resource-hint {
+  display: block;
+  margin-top: var(--space-xs);
+  font-size: 0.8rem;
+}
+
+@media (max-width: 700px) {
+  .sponsor-existing-list {
+    grid-template-columns: 1fr;
+  }
+
+  .sponsor-filters .btn {
+    flex: 1 1 100%;
+  }
+}
+/* ===== END: Sponsorship Management Hub ===== */
+
+/* START: Sponsor Pipeline editor */
+#sponsors [hidden] { display:none !important; }
+#sponsors .sponsor-lock { margin-bottom:var(--space-md); }
+#sponsors #sponsor-unlock { display:flex; flex-wrap:wrap; align-items:center; gap:0.75rem; }
+#sponsors .sponsor-edit-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); gap:1rem; margin-bottom:1rem; }
+#sponsors .sponsor-edit-grid label { display:grid; gap:0.35rem; }
+#sponsors input, #sponsors textarea { font:inherit; padding:0.55rem; border:1px solid var(--color-border); border-radius:8px; max-width:100%; }
+#sponsors textarea { min-height:6rem; }
+#sponsors #sponsor-editor { margin:1rem 0; }
+#sponsors .sponsor-table td:nth-child(6) { white-space:pre-wrap; min-width:12rem; }
+/* END: Sponsor Pipeline editor */
