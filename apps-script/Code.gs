@@ -485,7 +485,7 @@ function updateChurchRent() {
 
 /* START: Sponsor Pipeline — never included in public GET */
 function sponsorSheet_() {
-  var ss = SpreadsheetApp.openById('1pjhMwRuXupvlYiQ9m_3mT_wwKfWOLEVtDIo1NXM8YhA');
+  var ss = SpreadsheetApp.getActive(); // script is bound to the tracker; openById would need broader Google permissions
   var sh = ss.getSheetByName('Sponsor Pipeline');
   if (!sh || sh.getSheetId() !== 1061870498) throw new Error('Sponsor Pipeline tab does not match the configured tracker.');
   var expected = ['Business / Sponsor','Contact','Email / Phone','Pledged $','Received $','Stage','Next Follow-up','Notes'];

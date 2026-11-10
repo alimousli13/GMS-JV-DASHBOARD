@@ -9,6 +9,22 @@ cd "$(dirname "$0")"
 MSG="${1:-Update dashboard}"
 CLASP="npx --yes @google/clasp@2.4.2"
 
+# --- Safety check: only deploy from an up-to-date main -----------------------
+# deploy.sh replaces the live Apps Script with THIS computer's copy, so deploying
+# from an old copy would erase a teammate's Apps Script changes.
+BRANCH=$(git rev-parse --abbrev-ref HEAD)
+if [ "$BRANCH" != "main" ]; then
+  echo "✗ You're on branch '$BRANCH'. Deploy only from main:"
+  echo "    git checkout main && git pull"
+  exit 1
+fi
+git fetch -q origin
+if [ "$(git rev-list --count HEAD..origin/main)" != "0" ]; then
+  echo "✗ GitHub has changes you don't have yet. Get them first, then deploy again:"
+  echo "    git pull --no-edit"
+  exit 1
+fi
+
 DEPLOYMENT_ID=$(grep -o 'macros/s/[^/]*' config.js | cut -d/ -f3)
 if [ -z "$DEPLOYMENT_ID" ]; then echo "Couldn't find the Apps Script URL in config.js"; exit 1; fi
 

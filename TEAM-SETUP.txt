@@ -80,6 +80,32 @@ EVERY TIME YOU MAKE A CHANGE
    that's when it goes live.
 
 
+APPS SCRIPT CHANGES (Ali and Brianna only)
+------------------------------------------
+Anything in the apps-script/ folder (saving data, sponsor tracker, sheet menu).
+
+ONE-TIME SETUP ON YOUR COMPUTER
+  1. Have edit access to the Google Sheet.
+  2. Install Node.js from https://nodejs.org (LTS), then reopen the terminal.
+     Check:  node -v   (should print a version like v22.x.x)
+  3. Turn on "Google Apps Script API": https://script.google.com/home/usersettings
+  4. Log in (browser opens, pick the Google account with sheet access, Allow):
+       npx @google/clasp@2.4.2 login
+
+EVERY APPS SCRIPT CHANGE
+  1. Edit apps-script/Code.gs IN THIS REPO on a branch (same steps as above).
+     NEVER edit it on script.google.com. NEVER upload it through github.com.
+     The next deploy overwrites anything done there.
+  2. Open a pull request and write "needs Apps Script deploy" in it.
+  3. After it's merged, ONE person deploys from the latest main:
+       git checkout main && git pull --no-edit
+       ./deploy.sh "what changed"
+  4. Post "deployed" in the group chat.
+
+  deploy.sh refuses to run if you're on a branch or behind GitHub, so you can't
+  overwrite each other's work. If it stops you, run the command it prints.
+
+
 DO'S AND DON'TS (short version; full list in README.md)
 ------------------------------------------------------
 DO     git pull before you start, every time, and work on your own branch.
@@ -87,8 +113,8 @@ DO     put each new feature in its own files.
 DO     keep all numbers and formulas in the Google Sheet.
 DO     show numbers with <span data-key="...">—</span> (see README).
 DON'T  type dollar amounts or do math in the HTML/JavaScript.
-DON'T  edit anything in the apps-script/ folder or on script.google.com.
-       Message Ali first.
+DON'T  edit Apps Script on script.google.com or upload Code.gs on github.com.
+       Only Ali and Brianna change apps-script/, in the repo, then deploy.
 DON'T  touch config.js, deploy.sh, .clasp.json, wrangler.jsonc.
 DON'T  share the Enter Data passcode.
 
