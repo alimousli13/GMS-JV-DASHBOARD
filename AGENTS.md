@@ -8,3 +8,5 @@ Short version:
 - Apps Script code is edited only in `apps-script/Code.gs` here and shipped with `./deploy.sh "message"`. Never edit it on script.google.com.
 - Never hard-code numbers, never compute numbers in JS, never commit secrets, never write to formula cells.
 - Finish by telling the human whether to run `git push` or `./deploy.sh "message"`, and whether a "Kenny League" sheet-menu update is needed.
+- Each new feature goes in its own files (`name.js`, `name.css`) loaded by one include line. Don't append feature code to `app.js` or `style.css`.
+- Work on a branch, never directly on `main`. Every new `data-key` needs a Web-tab row in the sheet.

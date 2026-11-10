@@ -21,7 +21,9 @@ If you are an AI helping a teammate edit this repo, these rules are binding. If 
 6. **Check every sheet cell address against the actual sheet** before using it (see "Sheet map" below). Addresses are hard-coded in `Code.gs`.
 7. **Add any new file that must not be public to `.assetsignore`** (Cloudflare publishes everything else in the repo root).
 8. **Tell the human which command to run** when you're done: `git push` for site-only changes, `./deploy.sh "message"` if `apps-script/` changed, and whether a one-time sheet update must be run from the sheet's **Kenny League** menu.
-9. **Keep scoped CSS**: shared styles first in `style.css`, page/section-specific styles in their own commented `START`/`END` blocks.
+9. **Put each new feature in its own files.** A new section gets its own `name.js` and `name.css` (e.g. `sponsors.js`, `sponsors.css`), loaded with one `<script src>` / `<link>` line in `index.html`. Shared files (`index.html`, `app.js`, `style.css`) only get the section's HTML and that one include line. This keeps teammates from editing the same lines and avoids merge conflicts.
+10. **Shared CSS stays in `style.css`** (variables, cards, tables, buttons). Feature CSS uses a class prefix matching its file (e.g. `.sp-` for sponsors) so styles don't collide.
+11. **Every new `data-key` needs a matching row in the sheet's Web tab** (key, formula, format), and the PR description must list it. Otherwise the number shows "—".
 
 ### DON'T
 1. **Don't hard-code dollar amounts, counts, prices, or dates in HTML/JS.** Use `—` as the placeholder and a `data-key`.
@@ -33,6 +35,8 @@ If you are an AI helping a teammate edit this repo, these rules are binding. If 
 7. **Don't change `config.js` URLs, `.clasp.json`, `wrangler.jsonc`, `.assetsignore`, or `deploy.sh`** unless the task is specifically about deployment.
 8. **Don't add Google sign-in, databases, or other services** without asking the team. The architecture is intentionally Sheet + Apps Script + static site.
 9. **Don't run destructive git commands** (`git reset --hard`, `git push --force`, deleting branches) for a teammate.
+10. **Don't add feature code to the bottom of `app.js` or `style.css`.** Create the feature's own files instead (see DO #9).
+11. **Don't commit straight to `main`.** Work on a branch (`git checkout -b feature-name`), open a pull request, and let Ali merge it. Merging to `main` puts it live for the client.
 
 ---
 
@@ -58,6 +62,8 @@ Google Sheet (all formulas)  ──►  Apps Script web app (apps-script/Code.gs
 | `inputs.html` / `inputs.js` | Enter Data page (passcode, tabs: Game Days, Prices/Costs/Rates, Weekly Rentals, Funding) | Yes |
 | `app.js` | Dashboard loader: fetch API → fill `data-key`s, render schedule; CSV fallback | Yes |
 | `style.css` | All styles; CSS variables at top | Yes |
+| `<feature>.js` / `<feature>.css` | One pair per feature section (e.g. `sponsors.js`, `sponsors.css`) | Yes |
+| `.github/pull_request_template.md` | Checklist shown on every pull request | No |
 | `config.js` | `API_URL` (Apps Script `/exec`) and `SHEET_CSV_URL` (published Web tab) | Yes (URLs aren't secret; writes need the passcode) |
 | `apps-script/Code.gs` | The API + one-time sheet updates + "Kenny League" sheet menu | No |
 | `apps-script/appsscript.json` | Apps Script manifest (web app: execute as owner, anyone can call) | No |
@@ -81,7 +87,17 @@ Daily Tracker formulas depend on Schedule's column layout and exact day/location
 
 ## Team edit workflows
 
-**Golden rules:** `git pull` before you start · code lives in this repo · numbers live in the Sheet.
+**Golden rules:** `git pull` before you start · one branch per feature · each feature in its own files · numbers live in the Sheet.
+
+**Branch flow (teammates):**
+```bash
+git checkout main && git pull                 # start from the latest main
+git checkout -b my-feature                    # your own branch
+# ...edit your feature's own files...
+git pull origin main                          # catch up right before the PR
+git add . && git commit -m "what changed" && git push -u origin my-feature
+```
+Then open the pull request on GitHub, fill in the checklist, and paste the Cloudflare preview link. Ali reviews and merges. Never `git push --force`.
 
 | I want to… | Where | Then run |
 |---|---|---|

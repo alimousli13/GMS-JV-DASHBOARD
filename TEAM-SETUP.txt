@@ -58,25 +58,32 @@ EVERY TIME YOU MAKE A CHANGE
 1. Open the GMS-JV-DASHBOARD folder in Cursor
    (File -> Open Folder), then open the terminal: View -> Terminal.
 
-2. GET THE LATEST VERSION FIRST (always!)
-     git pull
+2. START FROM THE LATEST VERSION, ON YOUR OWN BRANCH
+     git checkout main && git pull
+     git checkout -b my-feature-name
+   (Use a short name, e.g. sponsor-table. Never work directly on main.)
 
-3. Make your edit (index.html / style.css in Cursor, or ask your AI and give it
-   README.md + "follow the Rules for AI assistants section").
+3. Make your edit. Put a new feature in its OWN files (e.g. sponsors.js and
+   sponsors.css) instead of adding to app.js / style.css. If you use an AI,
+   give it README.md and say "follow the Rules for AI assistants section".
 
 4. Preview it locally (optional):
      python3 -m http.server 8000
    then open http://localhost:8000. Press Ctrl+C in the terminal to stop.
 
-5. Save it to GitHub (this updates the live site in about a minute):
-     git add . && git commit -m "describe what you changed" && git push
+5. Catch up with main, then push your branch:
+     git pull origin main
+     git add . && git commit -m "describe what you changed" && git push -u origin my-feature-name
 
-6. Check the live site (hard refresh: Cmd+Shift+R).
+6. On GitHub, click "Compare & pull request". Fill in the checklist, paste
+   your Cloudflare preview link, and submit. Ali reviews and merges it, and
+   that's when it goes live.
 
 
 DO'S AND DON'TS (short version; full list in README.md)
 ------------------------------------------------------
-DO     git pull before you start, every time.
+DO     git pull before you start, every time, and work on your own branch.
+DO     put each new feature in its own files.
 DO     keep all numbers and formulas in the Google Sheet.
 DO     show numbers with <span data-key="...">—</span> (see README).
 DON'T  type dollar amounts or do math in the HTML/JavaScript.
@@ -88,7 +95,8 @@ DON'T  share the Enter Data passcode.
 
 IF SOMETHING GOES WRONG
 -----------------------
-"rejected ... fetch first"     -> run  git pull  then push again.
+"rejected ... fetch first"     -> run  git pull origin main  then push again.
+Never use  git push --force    -> it can erase a teammate's work.
 "Repository not found" / 404   -> accept the invite, or you're signed in to
                                   the wrong GitHub account / used a
                                   fine-grained token (use classic).
