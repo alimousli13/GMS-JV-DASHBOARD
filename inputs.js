@@ -40,6 +40,7 @@
   /* ---------- API ---------- */
   function api(body) {
     var url = API + (API.indexOf("?") === -1 ? "?" : "&") + "t=" + Date.now();
+    if (!body && typeof READ_KEY === "string" && READ_KEY) url += "&key=" + encodeURIComponent(READ_KEY);
     // POST body is sent as text/plain so the browser skips the CORS preflight Apps Script can't answer.
     var opts = body ? { method: "POST", body: JSON.stringify(body) } : {};
     return fetch(url, opts)

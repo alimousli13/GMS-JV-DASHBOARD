@@ -243,7 +243,8 @@
   // Prefer the Apps Script API (reflects edits instantly); fall back to the published CSV.
   var api = typeof API_URL === "string" ? API_URL.trim() : "";
   if (api && api.indexOf("PASTE") !== 0) {
-    fetch(api + (api.indexOf("?") === -1 ? "?" : "&") + "t=" + Date.now())
+    var keyParam = typeof READ_KEY === "string" && READ_KEY ? "&key=" + encodeURIComponent(READ_KEY) : "";
+    fetch(api + (api.indexOf("?") === -1 ? "?" : "&") + "t=" + Date.now() + keyParam)
       .then(function (res) {
         if (!res.ok) throw new Error("HTTP " + res.status);
         return res.json();

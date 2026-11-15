@@ -104,12 +104,33 @@ function onOpen() {
 
 /* ======================= Web app entry points ======================= */
 
-function doGet() {
+/* GET
+   ?view=public            → schedule only (used by the public site gmsjvbasketball.com)
+   ?key=<READ_KEY>         → full dashboard payload (finances, inputs, schedule)
+   READ_KEY lives in Apps Script → Project Settings → Script properties. Until it is
+   set, the full payload is served without a key (so nothing breaks during setup). */
+function doGet(e) {
   try {
-    return json_(buildPayload_(SpreadsheetApp.getActive()));
+    var p = (e && e.parameter) || {};
+    var ss = SpreadsheetApp.getActive();
+    if (p.view === 'public') return json_(buildPublic_(ss));
+    var readKey = PropertiesService.getScriptProperties().getProperty('READ_KEY');
+    if (readKey && String(p.key || '') !== readKey) {
+      return json_({ ok: false, error: 'Not authorized. The dashboard needs READ_KEY in config.js.' });
+    }
+    return json_(buildPayload_(ss));
   } catch (err) {
     return json_({ ok: false, error: String(err && err.message || err) });
   }
+}
+
+// Public data only: the game schedule. No money, no inputs, no sponsor details.
+function buildPublic_(ss) {
+  return {
+    ok: true,
+    serverTime: Utilities.formatDate(new Date(), ss.getSpreadsheetTimeZone(), 'MMM d, yyyy h:mm a'),
+    schedule: readSchedule_(ss)
+  };
 }
 
 function doPost(e) {
@@ -235,9 +256,13 @@ function buildPayload_(ss) {
 function readSchedule_(ss) {
   var sh = ss.getSheetByName('Schedule');
   if (!sh || sh.getLastRow() < 2) return [];
-  var rows = sh.getRange(2, 1, sh.getLastRow() - 1, 9).getDisplayValues();
-  return rows.filter(function (r) { return r[0] !== ''; }).map(function (r) {
-    return { week: r[0], day: r[1], time: r[2], court: r[3], venue: r[4], home: r[5], away: r[6], date: r[8] };
+  var rng = sh.getRange(2, 1, sh.getLastRow() - 1, 9);
+  var rows = rng.getDisplayValues(), raw = rng.getValues(), tz = ss.getSpreadsheetTimeZone();
+  return rows.map(function (r, i) {
+    var d = raw[i][8];
+    return { week: r[0], day: r[1], time: r[2], court: r[3], venue: r[4], home: r[5], away: r[6], date: r[8],
+             iso: d instanceof Date ? Utilities.formatDate(d, tz, 'yyyy-MM-dd') : '' };
+  }).filter(function (g) { return g.week !== '';
   });
 }
 

@@ -31,7 +31,7 @@ If you are an AI helping a teammate edit this repo, these rules are binding. If 
 3. **Don't edit Code.gs on script.google.com, and don't upload it through github.com.** Change it in this repo on a branch, merge to `main`, then deploy from an up-to-date `main` with `./deploy.sh`. Deploying replaces the live Apps Script with that computer's copy. (If someone edited it online, run `npx @google/clasp@2.4.2 pull` first to recover it.)
 4. **Don't write to formula cells from the website.** Only yellow input cells. Church rent (Setup C32:C41) is a formula; don't make it editable.
 5. **Don't rename or delete existing Web-tab keys or `FIELDS`/`DAILY_FIELDS` keys** without updating every place that uses them (sheet Web tab, `index.html`, `Code.gs`).
-6. **Don't put secrets in the repo.** The edit passcode lives only in Apps Script → Project Settings → Script properties (`EDIT_PASSCODE`). Never commit tokens or passwords.
+6. **Don't put secrets in the repo.** The edit passcode lives only in Apps Script → Project Settings → Script properties (`EDIT_PASSCODE`). Never commit tokens or passwords. The one exception is `READ_KEY` in `config.js`: it must match the `READ_KEY` script property, and it's only safe because the dashboard sits behind the owner login (Cloudflare Access). Never copy it into the public site.
 7. **Don't change `config.js` URLs, `.clasp.json`, `wrangler.jsonc`, `.assetsignore`, or `deploy.sh`** unless the task is specifically about deployment.
 8. **Don't add Google sign-in, databases, or other services** without asking the team. The architecture is intentionally Sheet + Apps Script + static site.
 9. **Don't run destructive git commands** (`git reset --hard`, `git push --force`, deleting branches) for a teammate.
@@ -50,7 +50,8 @@ Google Sheet (all formulas)  ──►  Apps Script web app (apps-script/Code.gs
         └──────────────  Static site on Cloudflare (index.html, inputs.html)
 ```
 
-- **Reading:** `app.js` calls the Apps Script URL (`API_URL` in `config.js`) and fills `[data-key]` elements. If that fails it falls back to the published CSV of the Web tab (`SHEET_CSV_URL`), which can lag ~5 minutes and has no schedule.
+- **Reading:** `app.js` calls the Apps Script URL (`API_URL` in `config.js`) with `key=READ_KEY` and fills `[data-key]` elements. Without the right key, Apps Script returns only the public schedule. The published-CSV fallback is turned off because a published sheet is readable by anyone.
+- **Public site:** gmsjvbasketball.com (Carter's repo) calls the same URL with `?view=public` and gets the schedule only: no money, no inputs, no sponsors.
 - **Writing:** `inputs.js` sends only changed fields + passcode. Apps Script validates everything (numbers, whole numbers, no negatives, percents 0–100) and writes nothing if any field is invalid.
 - **Sponsors:** `sponsors.js` sends `action: sponsors_list` / `sponsors_save` (with the passcode) to the same Apps Script URL. Sponsor contact details are only returned to passcode holders, never in the public GET. Only columns A–C and F–H of **Sponsor Pipeline** are written; money columns D–E are never touched.
 - **Every save is logged** in the sheet's **Edit Log** tab (time, cell, old → new).
