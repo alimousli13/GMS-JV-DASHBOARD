@@ -6,6 +6,7 @@
   <title>Kenny League — Season Dashboard</title>
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="sponsors.css">
+  <link rel="stylesheet" href="concessions.css">
 </head>
 <body>
   <a class="skip-link" href="#main">Skip to content</a>
@@ -16,6 +17,7 @@
       <a href="#pnl">Season P&amp;L</a>
       <a href="#weekly">Weekly Results</a>
       <a href="#setup">Setup</a>
+      <a href="#concessions">Concessions</a>
       <a href="#schedule">Schedule</a>
       <a href="#funding">Funding</a>
       <a href="#sponsors">Sponsors</a>
@@ -329,30 +331,6 @@
                 <td class="num placeholder" data-key="admission_card">—</td>
               </tr>
               <tr>
-                <td>Large Gatorade price</td>
-                <td class="num placeholder" data-key="lg_gatorade_price">—</td>
-              </tr>
-              <tr>
-                <td>Large Gatorade cost</td>
-                <td class="num placeholder" data-key="lg_gatorade_cost">—</td>
-              </tr>
-              <tr>
-                <td>Small Gatorade price</td>
-                <td class="num placeholder" data-key="sm_gatorade_price">—</td>
-              </tr>
-              <tr>
-                <td>Small Gatorade cost</td>
-                <td class="num placeholder" data-key="sm_gatorade_cost">—</td>
-              </tr>
-              <tr>
-                <td>Skittles price</td>
-                <td class="num placeholder" data-key="skittles_price">—</td>
-              </tr>
-              <tr>
-                <td>Skittles cost</td>
-                <td class="num placeholder" data-key="skittles_cost">—</td>
-              </tr>
-              <tr>
                 <td>Card processing rate</td>
                 <td class="num placeholder" data-key="card_rate">—</td>
               </tr>
@@ -370,6 +348,25 @@
       </div>
     </section>
     <!-- ===== END: Setup / Assumptions ===== -->
+
+    <!-- ===== START: Concessions ===== -->
+    <section id="concessions" class="section">
+      <h2>Concessions</h2>
+      <div class="card">
+        <p class="note">Every item sold at the table this season. Items, prices and costs are managed on the Enter Data page.</p>
+        <div class="table-wrap">
+          <table class="cx-table">
+            <thead>
+              <tr><th>Item</th><th class="num">Price</th><th class="num">Your cost</th><th class="num">Sold</th><th class="num">Revenue</th><th class="num">Profit</th></tr>
+            </thead>
+            <tbody id="cx-body">
+              <tr><td colspan="6" class="placeholder">Loads from the live sheet…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+    <!-- ===== END: Concessions ===== -->
 
     <!-- ===== START: Schedule Summary ===== -->
     <section id="schedule" class="section">
@@ -527,5 +524,6 @@
   <script src="config.js"></script>
   <script src="app.js"></script>
   <script src="sponsors.js"></script>
+  <script src="concessions.js"></script>
 </body>
 </html>

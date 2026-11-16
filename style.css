@@ -472,6 +472,14 @@ tfoot td {
 }
 .in-readonly { display: block; padding: 0.5rem 0.6rem; text-align: right; font-variant-numeric: tabular-nums; color: var(--color-muted); background: var(--color-bg); border-radius: 8px; }
 .in-auto { font-size: 0.7rem; font-weight: 600; text-transform: uppercase; background: var(--color-bg); color: var(--color-muted); padding: 0.05rem 0.4rem; border-radius: 999px; margin-left: 0.25rem; }
+.in-conc-table td { vertical-align: middle; }
+.in-conc-table td.in-conc-name { min-width: 12rem; }
+.in-conc-table td.in-conc-price, .in-conc-table td.in-conc-cost { min-width: 7rem; }
+.in-conc-table td.in-conc-active { text-align: center; }
+.in-conc-table .in-input-row input { text-align: left; }
+.in-field.is-missing .in-input-row { border: 2px solid var(--color-warning-text); }
+.in-needs { display: block; font-size: 0.75rem; font-weight: 700; color: var(--color-warning-text); }
+#in-conc-add { margin-top: var(--space-md); }
 /* ===== END: Enter Data page ===== */
 
 /* ===== START: Schedule section ===== */

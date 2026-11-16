@@ -253,6 +253,8 @@
         if (!json || !json.ok || !json.outputs) throw new Error((json && json.error) || "bad response");
         if (!json.schedule) scheduleMessage("Schedule not in the API yet — redeploy Apps Script as a New version.");
         fill(json.outputs);
+        // Let feature files (e.g. concessions.js) use the same data without fetching again.
+        document.dispatchEvent(new CustomEvent("kl:data", { detail: json }));
         if (json.schedule) renderSchedule(json.schedule);
       })
       .catch(function (err) {

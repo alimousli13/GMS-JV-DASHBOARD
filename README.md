@@ -65,6 +65,7 @@ Google Sheet (all formulas)  ──►  Apps Script web app (apps-script/Code.gs
 | `app.js` | Dashboard loader: fetch API → fill `data-key`s, render schedule; CSV fallback | Yes |
 | `style.css` | All styles; CSS variables at top | Yes |
 | `sponsors.js` / `sponsors.css` | Sponsors section: passcode-locked sponsor CRM (owner: Brianna) | Yes |
+| `concessions.js` / `concessions.css` | Concessions section: item list with sold, revenue and profit (from the sheet's Concessions tab) | Yes |
 | `<feature>.js` / `<feature>.css` | One pair per new feature section | Yes |
 | `assets/` | Files linked from the site (e.g. the sponsorship package PDF) | Yes |
 | `.github/pull_request_template.md` | Checklist shown on every pull request | No |
@@ -80,11 +81,12 @@ Google Sheet (all formulas)  ──►  Apps Script web app (apps-script/Code.gs
 | Tab | What | Key cells |
 |---|---|---|
 | **Season** | Season P&L summary (formulas only) | B6 net income, B17–B24 revenue, B28–B39 costs, A44:H53 weekly |
-| **Setup** | Season inputs (yellow) | B5 teams, B6 fee, B7 sponsor portion, B11–B13 refs/scorekeeper, B14–B15 admission, B16–B18 prices, B19–B21 unit costs, B22–B23 card fees, B24–B26 insurance/overhead, B27 concession card share, B32:B41 court rent/week (input), **C32:C41 church rent (formula)**, D32:D41 other fixed/week, B51 church $/hour, B52 church hours per game |
-| **Daily Tracker** | One column per game day, **C–V = days 1–20** (W1 Tue … W5 Fri) | Inputs: row 10 completed, 16 cash adm, 19 card adm, 24/27/30 Gatorade L/S + Skittles sold, 34 other revenue, 48 scorekeeper hrs, 51–52 other staff hrs/rate, 54–55 supplies qty/cost, 57 other expenses, 59 card txns. Formulas: 5 label, 9 date, 11 games, 35 revenue, 71 cost, 72 net |
+| **Setup** | Season inputs (yellow) | B5 teams, B6 fee, B7 sponsor portion, B11–B13 refs/scorekeeper, B14–B15 admission, (B16–B21 old Gatorade/Skittles prices, no longer used), B22–B23 card fees, B24–B26 insurance/overhead, B27 concession card share, B32:B41 court rent/week (input), **C32:C41 church rent (formula)**, D32:D41 other fixed/week, B51 church $/hour, B52 church hours per game |
+| **Daily Tracker** | One column per game day, **C–V = days 1–20** (W1 Tue … W5 Fri) | Inputs: row 10 completed, 16 cash adm, 19 card adm, 34 other revenue (concession quantities live on the Concessions tab), 48 scorekeeper hrs, 51–52 other staff hrs/rate, 54–55 supplies qty/cost, 57 other expenses, 59 card txns. Formulas: 5 label, 9 date, 11 games, 35 revenue, 71 cost, 72 net |
 | **Funding** | Running totals (yellow) | B8 sponsor payments, B9 player payments, B15 extra sponsorship, B16 other funding, B19 insurance refund |
 | **Schedule** | One row per game | A week, B day (full name, e.g. "Tuesday"), C time, D court, E location ("Alachua Sports Complex" / "Abundant Grace Church"), F team 1, G team 2, H matchup, I date |
 | **Sponsor Pipeline** | Sponsor CRM (header row must read exactly A–H as listed) | A Business / Sponsor, B Contact, C Email / Phone, D Pledged $, E Received $, F Stage, G Next Follow-up, H Notes. Website edits A–C and F–H only |
+| **Concessions** | One row per item sold at the table | A Item, B Price, C Unit cost, D Active (1/0), E ID (never edit), F–Y quantity sold on game days 1–20, Z/AA/AB sold, revenue, profit (formulas). Daily Tracker row 33 (revenue) and row 43 (item cost) sum this tab. Old fixed rows 24–32 and 37–42 are no longer used |
 | **Web** | Export list for the site: `section, key, label, value, format` | `format` ∈ currency, number, percent, text |
 | **Edit Log** | Auto-created audit trail of website saves | — |
 

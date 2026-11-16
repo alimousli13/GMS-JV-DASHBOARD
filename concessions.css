@@ -1,0 +1,2 @@
+/* Concessions section (dashboard). Shared table/card styles live in style.css. */
+.cx-table td.cx-missing { color: var(--color-warning-text); font-weight: 600; font-size: 0.85rem; }

@@ -33,13 +33,6 @@ var FIELDS = [
   { key: 'setup_admission_cash',    sheet: 'Setup',   cell: 'B14', type: 'money',   panel: 'prices',  group: 'Admission prices',     label: 'Admission price: cash' },
   { key: 'setup_admission_card',    sheet: 'Setup',   cell: 'B15', type: 'money',   panel: 'prices',  group: 'Admission prices',     label: 'Admission price: card' },
 
-  { key: 'setup_lg_price',          sheet: 'Setup',   cell: 'B16', type: 'money',   panel: 'prices',  group: 'Concession selling prices', label: 'Large Gatorade price' },
-  { key: 'setup_sm_price',          sheet: 'Setup',   cell: 'B17', type: 'money',   panel: 'prices',  group: 'Concession selling prices', label: 'Small Gatorade price' },
-  { key: 'setup_skittles_price',    sheet: 'Setup',   cell: 'B18', type: 'money',   panel: 'prices',  group: 'Concession selling prices', label: 'Skittles price' },
-
-  { key: 'setup_lg_cost',           sheet: 'Setup',   cell: 'B19', type: 'money',   panel: 'prices',  group: 'Concession unit costs', label: 'Large Gatorade unit cost' },
-  { key: 'setup_sm_cost',           sheet: 'Setup',   cell: 'B20', type: 'money',   panel: 'prices',  group: 'Concession unit costs', label: 'Small Gatorade unit cost' },
-  { key: 'setup_skittles_cost',     sheet: 'Setup',   cell: 'B21', type: 'money',   panel: 'prices',  group: 'Concession unit costs', label: 'Skittles unit cost' },
 
   { key: 'setup_refs_per_game',     sheet: 'Setup',   cell: 'B11', type: 'int',     panel: 'prices',  group: 'Officials & staff',    label: 'Referees per game' },
   { key: 'setup_ref_rate',          sheet: 'Setup',   cell: 'B12', type: 'money',   panel: 'prices',  group: 'Officials & staff',    label: 'Referee rate per game' },
@@ -77,10 +70,7 @@ var DAILY_FIELDS = [
   { field: 'completed',     row: 10, type: 'bool',   group: 'Status',            label: 'Day completed' },
   { field: 'cash_adm',      row: 16, type: 'int',    group: 'Admissions',        label: 'Cash admissions sold' },
   { field: 'card_adm',      row: 19, type: 'int',    group: 'Admissions',        label: 'Card admissions sold' },
-  { field: 'lg_sold',       row: 24, type: 'int',    group: 'Concessions sold',  label: 'Large Gatorade sold' },
-  { field: 'sm_sold',       row: 27, type: 'int',    group: 'Concessions sold',  label: 'Small Gatorade sold' },
-  { field: 'skittles_sold', row: 30, type: 'int',    group: 'Concessions sold',  label: 'Skittles sold' },
-  { field: 'other_rev',     row: 34, type: 'money',  group: 'Concessions sold',  label: 'Other event revenue' },
+  { field: 'other_rev',     row: 34, type: 'money',  group: 'Other revenue',     label: 'Other event revenue' },
   { field: 'score_hours',   row: 48, type: 'number', group: 'Staff',             label: 'Scorekeeper hours (all staff)' },
   { field: 'staff_hours',   row: 51, type: 'number', group: 'Staff',             label: 'Other staff hours' },
   { field: 'staff_rate',    row: 52, type: 'money',  group: 'Staff',             label: 'Other staff hourly rate' },
@@ -90,6 +80,16 @@ var DAILY_FIELDS = [
   { field: 'card_txns',     row: 59, type: 'int',    group: 'Card payments',     label: 'Card transaction count' }
 ];
 // Read-only rows shown as the day summary
+/* ---------- Concession items (sheet tab "Concessions") ----------
+   One row per item: A Item, B Price, C Unit cost, D Active (1/0), E ID (stable key),
+   F..Y = quantity sold on game days 1-20 (same order as Daily Tracker C..V),
+   Z Sold (season), AA Revenue, AB Profit, AC Needs (formulas). Blank price/cost is fine;
+   AC only says "price"/"cost" when an item has sold but is missing one. The owner adds/edits items on the
+   Enter Data page; Daily Tracker rows 33 (revenue) and 43 (item cost) sum this tab. */
+var CONC = { sheet: 'Concessions', first: 3, last: 300, dayCol: 6, width: 29 };
+var CONC_FIELDS = { name: { col: 'A', type: 'text' }, price: { col: 'B', type: 'money' },
+                    cost: { col: 'C', type: 'money' }, active: { col: 'D', type: 'bool' } };
+
 var DAY_INFO = { label: 5, dayName: 7, week: 8, date: 9, games: 11, revenue: 35, cost: 71, net: 72 };
 
 /* ======================= Sheet menu ======================= */
@@ -99,6 +99,7 @@ function onOpen() {
   SpreadsheetApp.getUi().createMenu('Kenny League')
     .addItem('Update schedule from file data', 'updateSchedule')
     .addItem('Recalculate church rent from schedule', 'updateChurchRent')
+    .addItem('Set up concession item list', 'setupConcessions')
     .addToUi();
 }
 
@@ -149,7 +150,27 @@ function doPost(e) {
 
     var ss = SpreadsheetApp.getActive();
     var changes = Array.isArray(body.changes) ? body.changes : [];
-    var index = buildIndex_(ss);
+    if (changes.length) lock.waitLock(20000); // before reading item rows, so simultaneous adds can't collide
+    var conc = readConcessions_(ss);
+    var index = buildIndex_(ss, conc);
+
+    // New concession items arrive as citem:new-1:name / :price / :cost / :active.
+    var extraWrites = [], newItems = {};
+    changes.forEach(function (c) {
+      var m = /^citem:(new-\d+):(name|price|cost|active)$/.exec(String(c.key));
+      if (m) newItems[m[1]] = newItems[m[1]] || {};
+      if (m) newItems[m[1]][m[2]] = c.value;
+    });
+    var nextRow = conc.reduce(function (mx, it) { return Math.max(mx, it.row + 1); }, CONC.first);
+    Object.keys(newItems).forEach(function (tmp) {
+      if (!String(newItems[tmp].name || '').trim()) throw new Error('Each new concession item needs a name.');
+      if (nextRow > CONC.last) throw new Error('The concession list is full.');
+      var row = nextRow++, id = newConcId_();
+      addConcIndex_(index, tmp, row, String(newItems[tmp].name).trim());
+      extraWrites.push({ target: { sheet: CONC.sheet, a1: 'E' + row, label: 'New item ID', noLog: true }, value: id });
+      if (!('active' in newItems[tmp])) extraWrites.push({ target: { sheet: CONC.sheet, a1: 'D' + row, noLog: true }, value: 1 });
+      concRowFormulas_(row).forEach(function (f) { extraWrites.push({ target: { sheet: CONC.sheet, a1: f[0], noLog: true, formula: true }, value: f[1] }); });
+    });
 
     // Validate everything first, so a single typo doesn't leave a half-saved batch.
     var writes = [];
@@ -160,21 +181,23 @@ function doPost(e) {
       var parsed;
       try { parsed = parse_(target.type, c.value); }
       catch (err) { return json_({ ok: false, error: target.label + ': ' + err.message }); }
+      if (target.type === 'text' && parsed === '') return json_({ ok: false, error: target.label + ': can\'t be blank' });
       writes.push({ target: target, value: parsed });
     }
+    writes = writes.concat(extraWrites);
 
     if (writes.length) {
-      lock.waitLock(20000);
       var log = getLogSheet_(ss);
       var stamp = new Date();
       var logRows = [];
       writes.forEach(function (w) {
         var range = ss.getSheetByName(w.target.sheet).getRange(w.target.a1);
         var before = range.getDisplayValue();
-        range.setValue(w.value);
+        if (w.target.formula) range.setFormula(w.value); else range.setValue(w.value);
+        if (w.target.noLog) return;
         logRows.push([stamp, w.target.sheet + '!' + w.target.a1, w.target.label, before, w.value === '' ? '(blank)' : w.value]);
       });
-      log.getRange(log.getLastRow() + 1, 1, logRows.length, 5).setValues(logRows);
+      if (logRows.length) log.getRange(log.getLastRow() + 1, 1, logRows.length, 5).setValues(logRows);
       SpreadsheetApp.flush();
     }
 
@@ -218,6 +241,7 @@ function buildPayload_(ss) {
     });
   }
 
+  var conc = readConcessions_(ss);
   var dailySh = ss.getSheetByName(SHEET.daily);
   var range = dailySh.getRange(1, DAY_FIRST_COL, DAILY_LAST_ROW, DAY_COUNT);
   var dv = range.getValues(), dd = range.getDisplayValues();
@@ -227,6 +251,8 @@ function buildPayload_(ss) {
     if (!Number(dv[DAY_INFO.games - 1][n])) continue; // no games scheduled that day
     var values = {};
     DAILY_FIELDS.forEach(function (f) { values[f.field] = out_(f.type, dv[f.row - 1][n], tz); });
+    var concQty = {};
+    conc.forEach(function (it) { concQty[it.id] = it.qty[n]; });
     days.push({
       n: n + 1,
       label: String(dd[DAY_INFO.label - 1][n]).replace(/\s*\n\s*/g, ' · '),
@@ -237,7 +263,8 @@ function buildPayload_(ss) {
       revenue: dd[DAY_INFO.revenue - 1][n],
       cost: dd[DAY_INFO.cost - 1][n],
       net: dd[DAY_INFO.net - 1][n],
-      values: values
+      values: values,
+      conc: concQty
     });
   }
 
@@ -249,6 +276,10 @@ function buildPayload_(ss) {
     fields: fields,
     rentals: rentals,
     days: days,
+    concessions: conc.map(function (it) {
+      return { id: it.id, name: it.name, price: it.price, cost: it.cost, active: it.active,
+               sold: it.sold, revenue: it.revenue, profit: it.profit, needs: it.needs };
+    }),
     dailyFields: DAILY_FIELDS.map(function (f) { return { field: f.field, label: f.label, type: f.type, group: f.group }; })
   };
 }
@@ -282,8 +313,9 @@ function readWeb_(ss) {
 
 /* ======================= Write helpers ======================= */
 
-function buildIndex_(ss) {
+function buildIndex_(ss, conc) {
   var idx = {};
+  (conc || readConcessions_(ss)).forEach(function (it) { addConcIndex_(idx, it.id, it.row, it.name); });
   FIELDS.forEach(function (f) { idx[f.key] = { sheet: f.sheet, a1: f.cell, type: f.type, label: f.label }; });
   for (var w = 1; w <= 10; w++) {
     RENTAL_COLS.forEach(function (rc) {
@@ -303,6 +335,11 @@ function parse_(type, raw) {
   if (type === 'bool') return (raw === true || raw === 1 || raw === '1' || raw === 'true') ? 1 : 0;
   if (raw === null || raw === undefined || String(raw).trim() === '') return '';
   var s = String(raw).trim();
+  if (type === 'text') {
+    if (s.length > 60) throw new Error('keep it under 60 characters');
+    if (/^[=+@\-]/.test(s)) throw new Error('can\'t start with = + - or @');
+    return s;
+  }
   if (type === 'date') {
     var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s);
     if (!m) throw new Error('use a date like 2026-11-10');
@@ -571,3 +608,132 @@ function sponsorHandle_(body) {
   return {ok:true,sponsors:sponsorList_(info)};
 }
 /* END: Sponsor Pipeline */
+
+
+/* =====================================================================
+   CONCESSION ITEMS
+   ===================================================================== */
+function newConcId_() { return 'c' + Utilities.getUuid().replace(/-/g, '').slice(0, 8); }
+
+// Sold / revenue / profit / needs for one item row. Blank price or cost never causes an error:
+// unsold items just show 0, and sold items missing a number show blank plus a "Needs" flag.
+function concRowFormulas_(row) {
+  var A = 'A' + row, B = 'B' + row, C = 'C' + row, Z = 'Z' + row;
+  return [[Z, '=IF(' + A + '="","",SUM(F' + row + ':Y' + row + '))'],
+          ['AA' + row, '=IF(' + A + '="","",IF(N(' + Z + ')=0,0,IF(ISNUMBER(' + B + '),' + Z + '*' + B + ',"")))'],
+          ['AB' + row, '=IF(' + A + '="","",IF(N(' + Z + ')=0,0,IF(AND(ISNUMBER(' + B + '),ISNUMBER(' + C + ')),' + Z + '*(' + B + '-' + C + '),"")))'],
+          ['AC' + row, '=IF(OR(' + A + '="",N(' + Z + ')=0),"",IF(NOT(ISNUMBER(' + B + ')),"price",IF(NOT(ISNUMBER(' + C + ')),"cost","")))']];
+}
+
+function addConcIndex_(idx, id, row, name) {
+  Object.keys(CONC_FIELDS).forEach(function (f) {
+    idx['citem:' + id + ':' + f] = { sheet: CONC.sheet, a1: CONC_FIELDS[f].col + row, type: CONC_FIELDS[f].type,
+                                     label: 'Concession "' + name + '" ' + f };
+  });
+  for (var n = 1; n <= DAY_COUNT; n++) {
+    idx['conc_' + n + '_' + id] = { sheet: CONC.sheet, a1: colLetter_(CONC.dayCol + n - 1) + row, type: 'int',
+                                    label: 'Day ' + n + ' ' + name + ' sold' };
+  }
+}
+
+// Every item row on the Concessions tab. Rows typed straight into the sheet get an ID here.
+function readConcessions_(ss) {
+  var sh = ss.getSheetByName(CONC.sheet);
+  if (!sh || sh.getLastRow() < CONC.first) return [];
+  var n = sh.getLastRow() - CONC.first + 1;
+  var rng = sh.getRange(CONC.first, 1, n, CONC.width);
+  var v = rng.getValues(), d = rng.getDisplayValues(), out = [];
+  v.forEach(function (r, i) {
+    var name = String(r[0]).trim(), id = String(r[4]).trim();
+    if (!name && !id) return;
+    if (!id) {
+      id = newConcId_();
+      sh.getRange(CONC.first + i, 5).setValue(id);
+      if (r[3] === '') sh.getRange(CONC.first + i, 4).setValue(1);
+      concRowFormulas_(CONC.first + i).forEach(function (f) { sh.getRange(f[0]).setFormula(f[1]); });
+    }
+    var qty = [];
+    for (var k = 0; k < DAY_COUNT; k++) { var q = r[CONC.dayCol - 1 + k]; qty.push(q === '' || q === null ? '' : Number(q) || 0); }
+    out.push({ id: id, row: CONC.first + i, name: name, price: r[1] === '' ? '' : r[1], cost: r[2] === '' ? '' : r[2],
+               active: (r[3] === '' || Number(r[3]) === 1) ? 1 : 0, qty: qty,
+               sold: d[i][25], revenue: d[i][26], profit: d[i][27], needs: String(d[i][28] || '') });
+  });
+  return out;
+}
+
+// Starting list = the items in the owner's Square account (Nov 2026). Costs are left for him to fill in.
+var CONC_SEED = [['Airheads', 1], ['Candy', 3], ['Chips', 2], ['Combo #1', 5], ['Combo #2', 5], ['Combo #3', 6],
+                 ['Combo #4', 6], ['Combo #5', 7], ['Cookies', 2], ['Gatorade 12oz', 2], ['Gatorade 20oz', 3],
+                 ['Hot Dogs', 2], ['Snack', 5], ['Soda', 2], ['Water', 1]];
+
+/* ONE-TIME: run from the sheet's Kenny League menu → "Set up concession item list".
+   Creates the Concessions tab, moves any old Gatorade/Skittles quantities onto it, and points
+   the Daily Tracker's concession revenue (row 33) and item cost (row 43) at it. Safe to re-run. */
+function setupConcessions() {
+  var ss = SpreadsheetApp.getActive();
+  var daily = ss.getSheetByName(SHEET.daily), setup = ss.getSheetByName(SHEET.setup);
+  var sh = ss.getSheetByName(CONC.sheet), created = false;
+
+  if (!sh) {
+    created = true;
+    sh = ss.insertSheet(CONC.sheet);
+    sh.getRange('A1').setValue('Concession items. Add anything sold at the table (easiest on the website: Enter Data → Concessions). Price and cost can stay blank until an item sells. Active 1 = shown on game days. Columns F–Y = quantity sold each game day.');
+    var head = ['Item', 'Price', 'Unit cost', 'Active', 'ID'];
+    for (var n = 1; n <= DAY_COUNT; n++) head.push("='Daily Tracker'!" + colLetter_(DAY_FIRST_COL + n - 1) + '5');
+    head.push('Sold (season)', 'Revenue', 'Profit', 'Needs');
+    sh.getRange(2, 1, 1, head.length).setValues([head]).setFontWeight('bold').setWrap(true).setVerticalAlignment('top');
+    sh.setFrozenRows(2); sh.setFrozenColumns(1);
+    sh.getRange('B3:C300').setNumberFormat('$#,##0.00');
+    sh.getRange('AA3:AB300').setNumberFormat('$#,##0.00');
+    sh.getRange('A3:D300').setBackground('#fff2cc'); // yellow = editable, like the rest of the tracker
+
+    var rows = CONC_SEED.map(function (it) { return { name: it[0], price: it[1], cost: '', active: 1, qty: null }; });
+
+    // Carry over anything already entered in the old fixed rows (24 Large Gatorade, 27 Small, 30 Skittles).
+    var old = [[24, 'Large Gatorade (old entries)', 'B16', 'B19'], [27, 'Small Gatorade (old entries)', 'B17', 'B20'],
+               [30, 'Skittles (old entries)', 'B18', 'B21']];
+    old.forEach(function (o) {
+      var q = daily.getRange(o[0], DAY_FIRST_COL, 1, DAY_COUNT).getValues()[0];
+      if (!q.some(function (x) { return Number(x) > 0; })) return;
+      rows.push({ name: o[1], price: setup.getRange(o[2]).getValue(), cost: setup.getRange(o[3]).getValue(), active: 0, qty: q });
+      daily.getRange(o[0], DAY_FIRST_COL, 1, DAY_COUNT).setValue(0);
+    });
+
+    rows.forEach(function (it, i) {
+      var r = CONC.first + i;
+      var vals = [it.name, it.price, it.cost, it.active, newConcId_()];
+      for (var k = 0; k < DAY_COUNT; k++) vals.push(it.qty ? (it.qty[k] === '' ? '' : Number(it.qty[k]) || 0) : '');
+      sh.getRange(r, 1, 1, 5 + DAY_COUNT).setValues([vals]);
+      concRowFormulas_(r).forEach(function (f) { sh.getRange(f[0]).setFormula(f[1]); });
+    });
+  }
+
+  // Refresh every item row's formulas (also adds the Needs column to a tab made by an older version).
+  sh.getRange(2, 29).setValue('Needs').setFontWeight('bold');
+  for (var rr = CONC.first; rr <= Math.max(sh.getLastRow(), CONC.first); rr++) {
+    if (String(sh.getRange(rr, 1).getValue()).trim() === '') continue;
+    concRowFormulas_(rr).forEach(function (f) { sh.getRange(f[0]).setFormula(f[1]); });
+  }
+
+  // Point the Daily Tracker at the Concessions tab (tracker column C ↔ Concessions column F, and so on).
+  var rev = [[]], cost = [[]];
+  for (var c = DAY_FIRST_COL; c < DAY_FIRST_COL + DAY_COUNT; c++) {
+    var q = colLetter_(c + CONC.dayCol - DAY_FIRST_COL);
+    rev[0].push('=ARRAYFORMULA(SUMPRODUCT(IFERROR(Concessions!$B$3:$B$300*1,0),IFERROR(Concessions!' + q + '$3:' + q + '$300*1,0)))');
+    cost[0].push('=ARRAYFORMULA(SUMPRODUCT(IFERROR(Concessions!$C$3:$C$300*1,0),IFERROR(Concessions!' + q + '$3:' + q + '$300*1,0)))');
+  }
+  daily.getRange(33, DAY_FIRST_COL, 1, DAY_COUNT).setFormulas(rev);
+  daily.getRange(43, DAY_FIRST_COL, 1, DAY_COUNT).setFormulas(cost);
+  daily.getRange('A23').setValue('GAME CONCESSIONS (items and quantities now live on the Concessions tab)');
+  daily.getRange('A33').setValue('Game concession revenue (Concessions tab)');
+  daily.getRange('A43').setValue('Total concession item cost (Concessions tab)');
+  daily.getRange('A24:A32').setFontColor('#999999');
+  daily.getRange('A37:A42').setFontColor('#999999');
+  var season = ss.getSheetByName('Season');
+  if (season) season.getRange('A12').setValue('Concession prices and costs live on the Concessions tab.');
+  setup.getRange('D16').setValue('Not used anymore: concession prices live on the Concessions tab.');
+
+  SpreadsheetApp.flush();
+  ss.toast(created ? 'Concessions tab created with ' + CONC_SEED.length + ' items. Add unit costs on the website.' :
+                     'Concessions tab already existed; formulas re-linked.', 'Kenny League', 10);
+}

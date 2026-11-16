@@ -19,7 +19,9 @@
     edits: {},      // key -> string value the user typed
     meta: {},       // key -> field meta
     dayN: null,
-    passcode: ""
+    passcode: "",
+    newConc: [],    // temp ids of concession items added but not saved yet
+    newCount: 0
   };
 
   var $ = function (id) { return document.getElementById(id); };
@@ -72,6 +74,20 @@
         state.meta[key] = { key: key, label: f.label, type: f.type, group: f.group };
       });
     });
+    // Concession items: name/price/cost/on-off, plus a quantity per item per game day
+    (data.concessions || []).forEach(function (it) {
+      concMeta(it.id, it.name);
+      [["name", it.name], ["price", it.price], ["cost", it.cost], ["active", it.active]].forEach(function (p) {
+        state.original["citem:" + it.id + ":" + p[0]] = str(p[1]);
+      });
+      data.days.forEach(function (d) {
+        var key = "conc_" + d.n + "_" + it.id;
+        state.original[key] = str(d.conc ? d.conc[it.id] : "");
+        state.meta[key] = { key: key, label: it.name, type: "int", group: "Concessions sold",
+                            hint: it.price === "" ? "No price yet (fine until it sells)" : money(it.price) + " each" };
+      });
+    });
+    state.newConc = [];
     $("in-server-time").textContent = data.serverTime || "—";
     if (state.dayN === null || !findDay(state.dayN)) state.dayN = pickStartDay(data.days);
   }
@@ -81,6 +97,20 @@
     var s = String(v === null || v === undefined ? "" : v).trim();
     if (!/^-?\d+(\.\d+)?$/.test(s)) return s;
     return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(Number(s));
+  }
+
+  function concMeta(id, name) {
+    var label = name || "New item";
+    state.meta["citem:" + id + ":name"] = { key: "citem:" + id + ":name", label: label + " name", type: "text", placeholder: "Item name" };
+    state.meta["citem:" + id + ":price"] = { key: "citem:" + id + ":price", label: label + " price", type: "money", placeholder: "optional" };
+    state.meta["citem:" + id + ":cost"] = { key: "citem:" + id + ":cost", label: label + " cost", type: "money", placeholder: "optional" };
+    state.meta["citem:" + id + ":active"] = { key: "citem:" + id + ":active", label: label + " selling", type: "bool" };
+  }
+
+  function findConc(id) {
+    var list = (state.data && state.data.concessions) || [];
+    for (var i = 0; i < list.length; i++) if (list[i].id === id) return list[i];
+    return null;
   }
 
   function findDay(n) {
@@ -100,6 +130,7 @@
 
   function isValid(type, v) {
     if (type === "bool" || type === "date") return true;
+    if (type === "text") { var t = String(v).trim(); return t !== "" && t.length <= 60 && !/^[=+@\-]/.test(t); }
     var s = String(v).trim();
     if (s === "") return true;
     var n = Number(s.replace(/[$,%\s]/g, ""));
@@ -117,7 +148,8 @@
       wrap.classList.toggle("is-invalid", !isValid(state.meta[key].type, value));
     }
     updateSaveBar();
-    if (key.indexOf("day") === 0) refreshDayOptions();
+    if (key.indexOf("day") === 0 || key.indexOf("conc_") === 0) refreshDayOptions();
+    if (/^citem:.*:active$/.test(key)) renderDays();
   }
 
   /* ---------- rendering ---------- */
@@ -149,7 +181,8 @@
       var lab = el("label", "in-bool-label");
       lab.htmlFor = id;
       lab.appendChild(cb);
-      lab.appendChild(document.createTextNode(" " + meta.label));
+      if (compact) cb.setAttribute("aria-label", meta.label);
+      else lab.appendChild(document.createTextNode(" " + meta.label));
       wrap.appendChild(lab);
       cb.addEventListener("change", function () { setEdit(key, cb.checked ? "1" : "0", wrap); });
     } else {
@@ -168,9 +201,10 @@
         input.type = "date";
       } else {
         input.type = "text";
-        input.inputMode = meta.type === "int" ? "numeric" : "decimal";
+        input.inputMode = meta.type === "int" ? "numeric" : meta.type === "text" ? "text" : "decimal";
         input.autocomplete = "off";
-        input.placeholder = meta.type === "int" ? "0" : "0.00";
+        input.placeholder = meta.placeholder || (meta.type === "int" ? "0" : meta.type === "text" ? "" : "0.00");
+        if (meta.type === "text") input.maxLength = 60;
       }
       row.appendChild(input);
       if (meta.type === "percent") row.appendChild(el("span", "in-affix", "%"));
@@ -247,7 +281,13 @@
       sum.appendChild(k);
     });
 
-    var metas = state.data.dailyFields.map(function (f) { return state.meta["day" + d.n + "_" + f.field]; });
+    var fields = state.data.dailyFields, metas = [], conc = concMetasForDay(d.n), placed = false;
+    fields.forEach(function (f, i) {
+      metas.push(state.meta["day" + d.n + "_" + f.field]);
+      var lastAdmission = f.group === "Admissions" && (!fields[i + 1] || fields[i + 1].group !== "Admissions");
+      if (lastAdmission) { metas = metas.concat(conc); placed = true; }
+    });
+    if (!placed) metas = metas.concat(conc);
     renderGroups($("in-day-fields"), metas);
 
     $("in-day-prev").disabled = days[0].n === d.n;
@@ -276,12 +316,82 @@
     });
   }
 
+  // Items to show on a game day: everything switched on, plus anything already sold that day
+  function concMetasForDay(n) {
+    return ((state.data && state.data.concessions) || []).filter(function (it) {
+      var qty = Number(current("conc_" + n + "_" + it.id)) || 0;
+      return current("citem:" + it.id + ":active") === "1" || qty > 0;
+    }).map(function (it) {
+      var m = state.meta["conc_" + n + "_" + it.id];
+      m.label = current("citem:" + it.id + ":name") || it.name;
+      return m;
+    });
+  }
+
+  function renderConc() {
+    var body = $("in-conc-body");
+    if (!body) return;
+    body.innerHTML = "";
+    var list = ((state.data && state.data.concessions) || []).slice();
+    list.sort(function (a, b) { return (Number(b.active) || 0) - (Number(a.active) || 0); });
+    var ids = list.map(function (it) { return it.id; }).concat(state.newConc);
+    if (!ids.length) {
+      var tr0 = el("tr"), td0 = el("td", "placeholder", "No items yet. Click + Add item.");
+      td0.colSpan = 5; tr0.appendChild(td0); body.appendChild(tr0);
+    }
+    ids.forEach(function (id) {
+      var tr = el("tr");
+      ["name", "price", "cost", "active"].forEach(function (f) {
+        var td = el("td", "in-conc-" + f);
+        var w = fieldControl(state.meta["citem:" + id + ":" + f], true);
+        var itm = findConc(id);
+        if (itm && itm.needs === f && current("citem:" + id + ":" + f) === "") w.classList.add("is-missing");
+        td.appendChild(w);
+        tr.appendChild(td);
+      });
+      var it = findConc(id);
+      var sold = el("td", "num in-conc-sold", it ? (it.sold === "" ? "0" : String(it.sold)) : "New");
+      if (it && it.needs) sold.appendChild(el("span", "in-needs", "add " + it.needs));
+      tr.appendChild(sold);
+      body.appendChild(tr);
+    });
+    var box = $("in-conc-needs");
+    if (box) {
+      var msg = concNeedsMessage();
+      box.hidden = !msg;
+      box.textContent = msg;
+    }
+  }
+
+  // Only items that have actually sold can be missing something. Unsold items can stay blank.
+  function concNeedsMessage() {
+    var list = ((state.data && state.data.concessions) || []).filter(function (it) { return it.needs; });
+    if (!list.length) return "";
+    return "Sold without a " + (list.every(function (it) { return it.needs === "cost"; }) ? "cost" : "price or cost") + ": " +
+      list.map(function (it) { return it.name + " (" + it.needs + ")"; }).join(", ") +
+      ". Fill these in so profit is right. Everything else can stay blank.";
+  }
+
+  function addConc() {
+    var id = "new-" + (++state.newCount);
+    state.newConc.push(id);
+    concMeta(id, "");
+    state.original["citem:" + id + ":name"] = "";
+    state.original["citem:" + id + ":price"] = "";
+    state.original["citem:" + id + ":cost"] = "";
+    state.original["citem:" + id + ":active"] = "1";
+    renderConc();
+    var input = document.getElementById("f-citem:" + id + ":name");
+    if (input) input.focus();
+  }
+
   function renderAll() {
     $("in-loading").hidden = true;
     renderDays();
     renderGroups($("in-prices-fields"), state.data.fields.filter(function (f) { return f.panel === "prices"; }).map(function (f) { return state.meta[f.key]; }));
     renderGroups($("in-funding-fields"), state.data.fields.filter(function (f) { return f.panel === "funding"; }).map(function (f) { return state.meta[f.key]; }));
     renderRentals();
+    renderConc();
     updateSaveBar();
   }
 
@@ -339,6 +449,14 @@
       $("in-passcode").focus();
       return;
     }
+    var unnamed = state.newConc.filter(function (id) {
+      var touched = keys.some(function (k) { return k.indexOf("citem:" + id + ":") === 0; });
+      return touched && !String(state.edits["citem:" + id + ":name"] || "").trim();
+    });
+    if (unnamed.length) {
+      status("Give each new concession item a name before saving.", "error");
+      return;
+    }
     var changes = keys.map(function (k) { return { key: k, value: state.edits[k] }; });
     $("in-save").disabled = true;
     $("in-save").textContent = "Saving…";
@@ -351,6 +469,8 @@
         var net = data.outputs && data.outputs.season_net ? data.outputs.season_net.value : "";
         status("Saved " + data.saved + " change" + (data.saved === 1 ? "" : "s") + "." +
                (net ? " Season net income is now " + net + "." : ""), "ok");
+        var needs = concNeedsMessage();
+        if (needs) status($("in-status").textContent + " " + needs, "ok");
       })
       .catch(function (e) {
         status("Not saved: " + e.message, "error");
@@ -364,12 +484,21 @@
 
   function discard() {
     state.edits = {};
+    state.newConc = [];
     renderAll();
     status("Changes discarded.", "info");
   }
 
   /* ---------- wiring ---------- */
   function wire() {
+    var addBtn = $("in-conc-add");
+    if (addBtn) addBtn.addEventListener("click", addConc);
+    Array.prototype.forEach.call(document.querySelectorAll("[data-goto]"), function (b) {
+      b.addEventListener("click", function () {
+        var tab = document.querySelector('.in-tab[data-tab="' + b.getAttribute("data-goto") + '"]');
+        if (tab) { tab.click(); window.scrollTo(0, 0); }
+      });
+    });
     Array.prototype.forEach.call(document.querySelectorAll(".in-tab"), function (btn) {
       btn.addEventListener("click", function () {
         var tab = btn.getAttribute("data-tab");

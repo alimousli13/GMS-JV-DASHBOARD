@@ -44,6 +44,7 @@
     <!-- Tabs -->
     <div class="in-tabs" role="tablist">
       <button type="button" role="tab" class="in-tab is-active" data-tab="days">Game Days</button>
+      <button type="button" role="tab" class="in-tab" data-tab="conc">Concessions</button>
       <button type="button" role="tab" class="in-tab" data-tab="prices">Prices, Costs &amp; Rates</button>
       <button type="button" role="tab" class="in-tab" data-tab="rentals">Weekly Rentals</button>
       <button type="button" role="tab" class="in-tab" data-tab="funding">Funding</button>
@@ -58,6 +59,22 @@
       <div class="kpi-grid in-day-summary" id="in-day-summary"></div>
       <p class="note">Day totals reflect the last save. Prices and costs for every day come from the <em>Prices, Costs &amp; Rates</em> tab.</p>
       <div id="in-day-fields" class="in-groups"></div>
+      <p class="note">Selling something that isn't listed? <button type="button" class="btn btn-link" data-goto="conc">Add it on the Concessions tab</button></p>
+    </section>
+
+    <section class="in-panel" id="panel-conc" data-panel="conc" hidden>
+      <div class="card">
+        <h3>Concession items</h3>
+        <p class="note">Everything sold at the table. Add an item and its price and cost whenever you know them; blanks are fine until an item sells. Untick <b>Selling</b> to hide an item from game days (past sales stay in the totals).</p>
+        <div id="in-conc-needs" class="in-status is-error" role="status" hidden></div>
+        <div class="table-wrap">
+          <table class="in-conc-table">
+            <thead><tr><th>Item</th><th>Price</th><th>Your cost</th><th>Selling</th><th class="num">Sold this season</th></tr></thead>
+            <tbody id="in-conc-body"></tbody>
+          </table>
+        </div>
+        <button type="button" class="btn" id="in-conc-add">+ Add item</button>
+      </div>
     </section>
 
     <section class="in-panel" id="panel-prices" data-panel="prices" hidden>
