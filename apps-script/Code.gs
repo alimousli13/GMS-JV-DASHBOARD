@@ -32,15 +32,16 @@ var FIELDS = [
 
   { key: 'setup_admission_cash',    sheet: 'Setup',   cell: 'B14', type: 'money',   panel: 'prices',  group: 'Admission prices',     label: 'Admission price: cash' },
   { key: 'setup_admission_card',    sheet: 'Setup',   cell: 'B15', type: 'money',   panel: 'prices',  group: 'Admission prices',     label: 'Ticket price: card (per ticket, before fee)' },
-  { key: 'setup_card_fee_order',    sheet: 'Setup',   cell: 'B16', type: 'money',   panel: 'prices',  group: 'Admission prices',     label: 'Card fee per order' },
+  { key: 'setup_card_fee_order',    sheet: 'Setup',   cell: 'B16', type: 'money',   panel: 'prices',  group: 'Card fees we charge',  label: 'Card fee per ticket order' },
+  { key: 'setup_conc_card_fee',     sheet: 'Setup',   cell: 'B17', type: 'money',   panel: 'prices',  group: 'Card fees we charge',  label: 'Card fee per concession order under $5' },
 
 
   { key: 'setup_refs_per_game',     sheet: 'Setup',   cell: 'B11', type: 'int',     panel: 'prices',  group: 'Officials & staff',    label: 'Referees per game' },
   { key: 'setup_ref_rate',          sheet: 'Setup',   cell: 'B12', type: 'money',   panel: 'prices',  group: 'Officials & staff',    label: 'Referee rate per game' },
   { key: 'setup_scorekeeper_rate',  sheet: 'Setup',   cell: 'B13', type: 'money',   panel: 'prices',  group: 'Officials & staff',    label: 'Scorekeeper hourly rate' },
 
-  { key: 'setup_card_rate',         sheet: 'Setup',   cell: 'B22', type: 'percent', panel: 'prices',  group: 'Card processing',      label: 'Card processing rate' },
-  { key: 'setup_card_fee_txn',      sheet: 'Setup',   cell: 'B23', type: 'money',   panel: 'prices',  group: 'Card processing',      label: 'Card fee per transaction' },
+  { key: 'setup_card_rate',         sheet: 'Setup',   cell: 'B22', type: 'percent', panel: 'prices',  group: 'Card processing',      label: 'Square rate per card sale' },
+  { key: 'setup_card_fee_txn',      sheet: 'Setup',   cell: 'B23', type: 'money',   panel: 'prices',  group: 'Card processing',      label: 'Square fixed fee per card sale' },
   { key: 'setup_conc_card_share',   sheet: 'Setup',   cell: 'B27', type: 'percent', panel: 'prices',  group: 'Card processing',      label: 'Concession sales paid by card' },
 
   { key: 'setup_church_rate',       sheet: 'Setup',   cell: 'B51', type: 'money',   panel: 'prices',  group: 'Church rental',        label: 'Church hourly rate' },
@@ -81,8 +82,10 @@ var DAILY_FIELDS = [
   { field: 'supplies_qty',  row: 54, type: 'number', group: 'Supplies & other',  label: 'Other supplies quantity' },
   { field: 'supplies_cost', row: 55, type: 'money',  group: 'Supplies & other',  label: 'Other supplies unit cost' },
   { field: 'other_exp',     row: 57, type: 'money',  group: 'Supplies & other',  label: 'Other event expenses' },
-  { field: 'card_txns',     row: 59, type: 'int',    group: 'Card payments',     label: 'Card transaction count',
-    hint: 'All card payments (tickets and concessions). Only used if Square charges a fixed amount per payment.' }
+  { field: 'card_conc_small', row: 27, type: 'int',  group: 'Card payments',     label: 'Card concession orders under $5',
+    hint: 'Each one adds the $1 card fee. Concession orders of $5 or more have no fee.' },
+  { field: 'card_txns',     row: 59, type: 'int',    group: 'Card payments',     label: 'All card payments',
+    hint: 'Every card sale that night, tickets and concessions. Square charges 15¢ on each. Left at 0, it counts ticket orders + small concession orders.' }
 ];
 // Read-only rows shown as the day summary
 /* ---------- Concession items (sheet tab "Concessions") ----------
@@ -105,7 +108,7 @@ function onOpen() {
     .addItem('Update schedule from file data', 'updateSchedule')
     .addItem('Recalculate church rent from schedule', 'updateChurchRent')
     .addItem('Set up concession item list', 'setupConcessions')
-    .addItem('Apply card fee per order ($7 + $1)', 'setupCardFee')
+    .addItem('Apply card fees ($1 per order, Square 2.3% + 15¢)', 'setupCardFee')
     .addToUi();
 }
 
@@ -744,63 +747,118 @@ function setupConcessions() {
                      'Concessions tab already existed; formulas re-linked.', 'Kenny League', 10);
 }
 
-/* ======================= Card fee per order =======================
-   Card tickets are priced like cash ($7) and the card fee ($1) is added ONCE per card order,
-   so 2 tickets on one card = $15, not $16. Run once from the sheet menu: Kenny League → Apply card fee per order.
-   Reuses the old Gatorade rows (no longer used since concessions moved to the Concessions tab):
-     Setup B16           = Card fee per order (was Large Gatorade price)
-     Daily Tracker row 24 = Card ticket orders (input), row 25 = fee per order, row 26 = card fee revenue
-     Daily Tracker row 21 = card tickets × price + card fee revenue (so the card processing base includes the fee)
-   Safe to run again: it won't overwrite the fee, the price or orders already entered. */
+/* ======================= Card fees =======================
+   What Kenny charges:  tickets $7 + $1 once per card ticket order (2 tickets on one card = $15);
+                        concessions + $1 on card orders under $5 (none at $5 or more).
+   What Square charges: 2.3% + 15¢ per card sale (Setup B22 / B23).
+   Run once from the sheet menu: Kenny League → Apply card fees. Reuses the old Gatorade/Skittles rows:
+     Setup B16 = card fee per ticket order, B17 = card fee per concession order under $5
+     Daily Tracker 24 = card ticket orders (input), 25 fee, 26 ticket fee revenue
+     Daily Tracker 27 = card concession orders under $5 (input), 28 fee, 29 concession fee revenue
+     Daily Tracker 21 = card tickets × price + ticket fees; 35 total revenue adds row 29
+     Daily Tracker 62 = card sales base (tickets + fees + card share of concessions + concession fees)
+     Daily Tracker 63 = base × rate + 15¢ × card payments (row 59, or ticket orders + small concession orders if 0)
+   Safe to run again: never overwrites values already entered. */
 function setupCardFee() {
   var ss = SpreadsheetApp.getActive();
-  var setup = ss.getSheetByName(SHEET.setup), dt = ss.getSheetByName(SHEET.daily), web = ss.getSheetByName(SHEET.web);
-  var already = String(setup.getRange('A16').getValue()).trim() === 'Card fee per order';
-  var YELLOW = '#fff2cc', last = DAY_FIRST_COL + DAY_COUNT - 1;
+  var setup = ss.getSheetByName(SHEET.setup), dt = ss.getSheetByName(SHEET.daily),
+      web = ss.getSheetByName(SHEET.web), season = ss.getSheetByName('Season');
+  var ticketDone = String(setup.getRange('A16').getValue()).trim() === 'Card fee per ticket order' ||
+                   String(setup.getRange('A16').getValue()).trim() === 'Card fee per order';
+  var concDone = String(setup.getRange('A17').getValue()).trim() === 'Card fee per concession order under $5';
+  var YELLOW = '#fff2cc', BLACK = '#000000', MONEY = '$#,##0.00', last = DAY_FIRST_COL + DAY_COUNT - 1;
   function cols(row) { return dt.getRange(row, DAY_FIRST_COL, 1, DAY_COUNT); }
-  function rowFormulas(tpl) {
-    var out = [];
-    for (var c = DAY_FIRST_COL; c <= last; c++) out.push(tpl.replace(/\{c\}/g, colLetter_(c)));
-    return [out];
-  }
+  function f(tpl) { var o = []; for (var c = DAY_FIRST_COL; c <= last; c++) o.push(tpl.replace(/\{c\}/g, colLetter_(c))); return [o]; }
+  function label(sh, a1, text) { sh.getRange(a1).setValue(text).setFontColor(BLACK); }
 
-  // Setup
-  setup.getRange('A15').setValue('Ticket price: card (per ticket, before fee)');
-  setup.getRange('D15').setValue('Usually the same as cash. The card fee below is added once per card order.');
-  setup.getRange('A16').setValue('Card fee per order').setFontColor('#000000');
+  // ---- Setup ----
+  label(setup, 'A15', 'Ticket price: card (per ticket, before fee)');
+  setup.getRange('D15').setValue('Usually the same as cash. The card fee is added once per card order.');
+  label(setup, 'A16', 'Card fee per ticket order');
   setup.getRange('D16').setValue('Added once per card payment, however many tickets: 2 tickets on one card = $7 + $7 + $1 = $15.');
-  setup.getRange('B16').setBackground(YELLOW).setFontColor('#000000');
-  if (!already) {
+  label(setup, 'A17', 'Card fee per concession order under $5');
+  setup.getRange('D17').setValue('Added to card concession orders under $5. Orders of $5 or more have no fee.');
+  setup.getRange('B16:B17').setBackground(YELLOW).setFontColor(BLACK).setNumberFormat(MONEY);
+  label(setup, 'A22', 'Square rate per card sale');
+  setup.getRange('D22').setValue('Square charges 2.3% + 15¢ per card sale (from Kenny). Applied to all card sales, fees included.');
+  label(setup, 'A23', 'Square fixed fee per card sale');
+  setup.getRange('D23').setValue('15¢ on every card payment (Daily Tracker row 59).');
+  if (!ticketDone) {
     if (Number(setup.getRange('B15').getValue()) === 8) setup.getRange('B15').setValue(7);
     setup.getRange('B16').setValue(1);
   }
+  if (!concDone) {
+    setup.getRange('B17').setValue(1);
+    // Kenny's Square terms; only replace the old placeholder values (2.5%, $0).
+    if (Number(setup.getRange('B22').getValue()) === 0.025) setup.getRange('B22').setValue(0.023);
+    if (Number(setup.getRange('B23').getValue()) === 0) setup.getRange('B23').setValue(0.15);
+  }
 
-  // Daily Tracker
-  dt.getRange('A21').setValue('Card admission revenue (tickets + card fees)');
-  dt.getRange('A23').setValue('CARD FEE (added once per card order)').setFontColor('#000000');
-  dt.getRange('A24').setValue('Card ticket orders (one per card payment)').setFontColor('#000000');
-  dt.getRange('A25').setValue('Card fee per order').setFontColor('#000000');
-  dt.getRange('A26').setValue('Card fee revenue').setFontColor('#000000');
-  if (!already) {
-    // Keep past days' totals unchanged: old math was tickets × $8, i.e. one $1 fee per ticket.
+  // ---- Daily Tracker: ticket fee ----
+  label(dt, 'A19', 'Card tickets sold');
+  label(dt, 'A21', 'Card admission revenue (tickets + card fees)');
+  label(dt, 'A23', 'CARD FEES WE CHARGE ($1 per order)');
+  label(dt, 'A24', 'Card ticket orders (one per card payment)');
+  label(dt, 'A25', 'Card fee per ticket order');
+  label(dt, 'A26', 'Ticket card fee revenue');
+  if (!ticketDone) {
+    // Keep past totals unchanged: old math was tickets × $8, i.e. one $1 fee per ticket.
     cols(24).setValues(cols(19).getValues().map(function (r) { return r.map(function (v) { return Number(v) || 0; }); }));
   }
-  cols(24).setBackground(YELLOW).setFontColor('#000000').setNumberFormat('0');
-  cols(25).setFormulas(rowFormulas('=Setup!$B$16')).setBackground(null).setNumberFormat('$#,##0.00');
-  cols(26).setFormulas(rowFormulas('={c}24*{c}25')).setBackground(null).setNumberFormat('$#,##0.00');
-  cols(21).setFormulas(rowFormulas('={c}19*{c}20+{c}26'));
-  // Old "Large Gatorade cost" row multiplied row 24; it isn't used in any total, but blank it so it can't mislead.
-  dt.getRange('A40').setValue('(not used)').setFontColor('#999999');
-  cols(40).setValue(0);
+  cols(24).setBackground(YELLOW).setFontColor(BLACK).setNumberFormat('0');
+  cols(25).setFormulas(f('=Setup!$B$16')).setBackground(null).setFontColor(BLACK).setNumberFormat(MONEY);
+  cols(26).setFormulas(f('={c}24*{c}25')).setBackground(null).setFontColor(BLACK).setNumberFormat(MONEY);
+  cols(21).setFormulas(f('={c}19*{c}20+{c}26'));
 
-  // Web output for the dashboard (row 83 was the old Large Gatorade price)
-  if (web && String(web.getRange('B83').getValue()).trim() !== 'card_fee_order') {
-    web.getRange('B83:D83').setValues([['card_fee_order', 'Card fee per order', '=Setup!B16']]);
+  // ---- Daily Tracker: concession fee (orders under $5) ----
+  label(dt, 'A27', 'Card concession orders under $5');
+  label(dt, 'A28', 'Card fee per concession order under $5');
+  label(dt, 'A29', 'Concession card fee revenue');
+  if (!concDone) cols(27).setValue(0); // old Small Gatorade quantities were already moved to the Concessions tab
+  cols(27).setBackground(YELLOW).setFontColor(BLACK).setNumberFormat('0');
+  cols(28).setFormulas(f('=Setup!$B$17')).setBackground(null).setFontColor(BLACK).setNumberFormat(MONEY);
+  cols(29).setFormulas(f('={c}27*{c}28')).setBackground(null).setFontColor(BLACK).setNumberFormat(MONEY);
+  label(dt, 'A35', 'TOTAL EVENT REVENUE');
+  cols(35).setFormulas(f('=IF(ISNUMBER({c}33),SUM({c}22,{c}33,{c}34,{c}29),"Set small price")'));
+
+  // ---- Daily Tracker: what Square charges ----
+  label(dt, 'A59', 'All card payments (0 = ticket orders + small concession orders)');
+  label(dt, 'A60', 'Square rate per card sale');
+  label(dt, 'A61', 'Square fixed fee per card sale');
+  label(dt, 'A62', 'Card sales total (tickets, fees, card share of concessions)');
+  label(dt, 'A63', 'Square card fees (2.3% + 15¢ per sale)');
+  cols(62).setFormulas(f('=IF(ISNUMBER({c}35),{c}21+{c}33*{c}58+{c}29,"Set small price")'));
+  cols(63).setFormulas(f('=IF(ISNUMBER({c}62),{c}62*{c}60+MAX({c}59,{c}24+{c}27)*{c}61,"Set small price")'));
+
+  // Old item-cost rows that multiplied rows 24/27; not in any total, blank them so they can't mislead.
+  [40, 41].forEach(function (r) { dt.getRange(r, 1).setValue('(not used)').setFontColor('#999999'); cols(r).setValue(0); });
+
+  // ---- Season: concession card fees count as revenue ----
+  label(season, 'A20', 'Card fees on concession orders under $5');
+  season.getRange('B20').setFormula("=SUM('Daily Tracker'!C29:V29)").setNumberFormat(MONEY);
+  label(season, 'A37', 'Square card fees');
+
+  // ---- Web outputs for the dashboard ----
+  if (web) {
+    var rows = web.getDataRange().getValues(), keys = rows.map(function (r) { return String(r[1]).trim(); });
+    // Reuse the row if the key exists, else take over an old Gatorade/Skittles row, else add a row at the end.
+    function put(key, section, text, formula, oldRow) {
+      var r = keys.indexOf(key) + 1;
+      if (!r && oldRow && /gatorade|skittles/.test(keys[oldRow - 1] || '')) r = oldRow;
+      if (!r) r = Math.max(web.getLastRow(), keys.length) + 1;
+      web.getRange(r, 1, 1, 4).setValues([[section, key, text, formula]]);
+      web.getRange(r, 4).setNumberFormat(MONEY);
+      keys[r - 1] = key;
+    }
+    put('card_fee_order', 'setup', 'Card fee per ticket order', '=Setup!B16', 83);
+    put('conc_card_fee', 'setup', 'Card fee per concession order under $5', '=Setup!B17', 84);
+    put('card_fee_txn', 'setup', 'Square fixed fee per card sale', '=Setup!B23');
+    put('rev_conc_card_fees', 'revenue', 'Card fees on concession orders under $5', '=Season!B20');
   }
 
   SpreadsheetApp.flush();
-  ss.toast(already ? 'Card fee rows re-linked. Your fee, price and orders were kept.'
-                   : 'Done: card tickets $' + setup.getRange('B15').getValue() + ' + $' + setup.getRange('B16').getValue() + ' per card order.',
-           'Kenny League', 8);
+  ss.toast('Card fees set: tickets $' + setup.getRange('B15').getValue() + ' + $' + setup.getRange('B16').getValue() +
+           ' per card order; concessions + $' + setup.getRange('B17').getValue() + ' on card orders under $5; Square ' +
+           (Number(setup.getRange('B22').getValue()) * 100).toFixed(1) + '% + $' + Number(setup.getRange('B23').getValue()).toFixed(2) + ' per sale.',
+           'Kenny League', 10);
 }
-
