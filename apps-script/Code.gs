@@ -31,7 +31,8 @@ var FIELDS = [
   { key: 'setup_sponsor_portion',   sheet: 'Setup',   cell: 'B7',  type: 'money',   panel: 'prices',  group: 'League & team fees',   label: 'Sponsor portion per team' },
 
   { key: 'setup_admission_cash',    sheet: 'Setup',   cell: 'B14', type: 'money',   panel: 'prices',  group: 'Admission prices',     label: 'Admission price: cash' },
-  { key: 'setup_admission_card',    sheet: 'Setup',   cell: 'B15', type: 'money',   panel: 'prices',  group: 'Admission prices',     label: 'Admission price: card' },
+  { key: 'setup_admission_card',    sheet: 'Setup',   cell: 'B15', type: 'money',   panel: 'prices',  group: 'Admission prices',     label: 'Ticket price: card (per ticket, before fee)' },
+  { key: 'setup_card_fee_order',    sheet: 'Setup',   cell: 'B16', type: 'money',   panel: 'prices',  group: 'Admission prices',     label: 'Card fee per order' },
 
 
   { key: 'setup_refs_per_game',     sheet: 'Setup',   cell: 'B11', type: 'int',     panel: 'prices',  group: 'Officials & staff',    label: 'Referees per game' },
@@ -69,7 +70,10 @@ var DAY_FIRST_COL = 3, DAY_COUNT = 20, DAILY_LAST_ROW = 73;
 var DAILY_FIELDS = [
   { field: 'completed',     row: 10, type: 'bool',   group: 'Status',            label: 'Day completed' },
   { field: 'cash_adm',      row: 16, type: 'int',    group: 'Admissions',        label: 'Cash admissions sold' },
-  { field: 'card_adm',      row: 19, type: 'int',    group: 'Admissions',        label: 'Card admissions sold' },
+  { field: 'card_adm',      row: 19, type: 'int',    group: 'Admissions',        label: 'Card tickets sold',
+    hint: 'Every ticket paid by card, at the door or online.' },
+  { field: 'card_orders',   row: 24, type: 'int',    group: 'Admissions',        label: 'Card ticket orders',
+    hint: 'Separate card payments. A family buying 3 tickets on one card = 1 order. The card fee is added once per order.' },
   { field: 'other_rev',     row: 34, type: 'money',  group: 'Other revenue',     label: 'Other event revenue' },
   { field: 'score_hours',   row: 48, type: 'number', group: 'Staff',             label: 'Scorekeeper hours (all staff)' },
   { field: 'staff_hours',   row: 51, type: 'number', group: 'Staff',             label: 'Other staff hours' },
@@ -77,7 +81,8 @@ var DAILY_FIELDS = [
   { field: 'supplies_qty',  row: 54, type: 'number', group: 'Supplies & other',  label: 'Other supplies quantity' },
   { field: 'supplies_cost', row: 55, type: 'money',  group: 'Supplies & other',  label: 'Other supplies unit cost' },
   { field: 'other_exp',     row: 57, type: 'money',  group: 'Supplies & other',  label: 'Other event expenses' },
-  { field: 'card_txns',     row: 59, type: 'int',    group: 'Card payments',     label: 'Card transaction count' }
+  { field: 'card_txns',     row: 59, type: 'int',    group: 'Card payments',     label: 'Card transaction count',
+    hint: 'All card payments (tickets and concessions). Only used if Square charges a fixed amount per payment.' }
 ];
 // Read-only rows shown as the day summary
 /* ---------- Concession items (sheet tab "Concessions") ----------
@@ -100,6 +105,7 @@ function onOpen() {
     .addItem('Update schedule from file data', 'updateSchedule')
     .addItem('Recalculate church rent from schedule', 'updateChurchRent')
     .addItem('Set up concession item list', 'setupConcessions')
+    .addItem('Apply card fee per order ($7 + $1)', 'setupCardFee')
     .addToUi();
 }
 
@@ -280,7 +286,7 @@ function buildPayload_(ss) {
       return { id: it.id, name: it.name, price: it.price, cost: it.cost, active: it.active,
                sold: it.sold, revenue: it.revenue, profit: it.profit, needs: it.needs };
     }),
-    dailyFields: DAILY_FIELDS.map(function (f) { return { field: f.field, label: f.label, type: f.type, group: f.group }; })
+    dailyFields: DAILY_FIELDS.map(function (f) { return { field: f.field, label: f.label, type: f.type, group: f.group, hint: f.hint || '' }; })
   };
 }
 
@@ -737,3 +743,64 @@ function setupConcessions() {
   ss.toast(created ? 'Concessions tab created with ' + CONC_SEED.length + ' items. Add unit costs on the website.' :
                      'Concessions tab already existed; formulas re-linked.', 'Kenny League', 10);
 }
+
+/* ======================= Card fee per order =======================
+   Card tickets are priced like cash ($7) and the card fee ($1) is added ONCE per card order,
+   so 2 tickets on one card = $15, not $16. Run once from the sheet menu: Kenny League → Apply card fee per order.
+   Reuses the old Gatorade rows (no longer used since concessions moved to the Concessions tab):
+     Setup B16           = Card fee per order (was Large Gatorade price)
+     Daily Tracker row 24 = Card ticket orders (input), row 25 = fee per order, row 26 = card fee revenue
+     Daily Tracker row 21 = card tickets × price + card fee revenue (so the card processing base includes the fee)
+   Safe to run again: it won't overwrite the fee, the price or orders already entered. */
+function setupCardFee() {
+  var ss = SpreadsheetApp.getActive();
+  var setup = ss.getSheetByName(SHEET.setup), dt = ss.getSheetByName(SHEET.daily), web = ss.getSheetByName(SHEET.web);
+  var already = String(setup.getRange('A16').getValue()).trim() === 'Card fee per order';
+  var YELLOW = '#fff2cc', last = DAY_FIRST_COL + DAY_COUNT - 1;
+  function cols(row) { return dt.getRange(row, DAY_FIRST_COL, 1, DAY_COUNT); }
+  function rowFormulas(tpl) {
+    var out = [];
+    for (var c = DAY_FIRST_COL; c <= last; c++) out.push(tpl.replace(/\{c\}/g, colLetter_(c)));
+    return [out];
+  }
+
+  // Setup
+  setup.getRange('A15').setValue('Ticket price: card (per ticket, before fee)');
+  setup.getRange('D15').setValue('Usually the same as cash. The card fee below is added once per card order.');
+  setup.getRange('A16').setValue('Card fee per order').setFontColor('#000000');
+  setup.getRange('D16').setValue('Added once per card payment, however many tickets: 2 tickets on one card = $7 + $7 + $1 = $15.');
+  setup.getRange('B16').setBackground(YELLOW).setFontColor('#000000');
+  if (!already) {
+    if (Number(setup.getRange('B15').getValue()) === 8) setup.getRange('B15').setValue(7);
+    setup.getRange('B16').setValue(1);
+  }
+
+  // Daily Tracker
+  dt.getRange('A21').setValue('Card admission revenue (tickets + card fees)');
+  dt.getRange('A23').setValue('CARD FEE (added once per card order)').setFontColor('#000000');
+  dt.getRange('A24').setValue('Card ticket orders (one per card payment)').setFontColor('#000000');
+  dt.getRange('A25').setValue('Card fee per order').setFontColor('#000000');
+  dt.getRange('A26').setValue('Card fee revenue').setFontColor('#000000');
+  if (!already) {
+    // Keep past days' totals unchanged: old math was tickets × $8, i.e. one $1 fee per ticket.
+    cols(24).setValues(cols(19).getValues().map(function (r) { return r.map(function (v) { return Number(v) || 0; }); }));
+  }
+  cols(24).setBackground(YELLOW).setFontColor('#000000').setNumberFormat('0');
+  cols(25).setFormulas(rowFormulas('=Setup!$B$16')).setBackground(null).setNumberFormat('$#,##0.00');
+  cols(26).setFormulas(rowFormulas('={c}24*{c}25')).setBackground(null).setNumberFormat('$#,##0.00');
+  cols(21).setFormulas(rowFormulas('={c}19*{c}20+{c}26'));
+  // Old "Large Gatorade cost" row multiplied row 24; it isn't used in any total, but blank it so it can't mislead.
+  dt.getRange('A40').setValue('(not used)').setFontColor('#999999');
+  cols(40).setValue(0);
+
+  // Web output for the dashboard (row 83 was the old Large Gatorade price)
+  if (web && String(web.getRange('B83').getValue()).trim() !== 'card_fee_order') {
+    web.getRange('B83:D83').setValues([['card_fee_order', 'Card fee per order', '=Setup!B16']]);
+  }
+
+  SpreadsheetApp.flush();
+  ss.toast(already ? 'Card fee rows re-linked. Your fee, price and orders were kept.'
+                   : 'Done: card tickets $' + setup.getRange('B15').getValue() + ' + $' + setup.getRange('B16').getValue() + ' per card order.',
+           'Kenny League', 8);
+}
+

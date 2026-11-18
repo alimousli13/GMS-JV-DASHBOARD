@@ -71,7 +71,7 @@
       data.dailyFields.forEach(function (f) {
         var key = "day" + d.n + "_" + f.field;
         state.original[key] = str(d.values[f.field]);
-        state.meta[key] = { key: key, label: f.label, type: f.type, group: f.group };
+        state.meta[key] = { key: key, label: f.label, type: f.type, group: f.group, hint: f.hint || "" };
       });
     });
     // Concession items: name/price/cost/on-off, plus a quantity per item per game day
@@ -363,6 +363,17 @@
     }
   }
 
+  // Card fee is once per card order. Flag days where orders look wrong (never blocks saving).
+  function cardOrderMessage() {
+    var notes = [];
+    ((state.data && state.data.days) || []).forEach(function (d) {
+      var t = Number(current("day" + d.n + "_card_adm")) || 0, o = Number(current("day" + d.n + "_card_orders")) || 0;
+      if (t > 0 && o === 0) notes.push(d.label + ": " + t + " card ticket" + (t === 1 ? "" : "s") + " but 0 card orders, so no card fees are counted");
+      else if (o > t) notes.push(d.label + ": more card orders (" + o + ") than card tickets (" + t + ")");
+    });
+    return notes.length ? "Check card orders: " + notes.join("; ") + "." : "";
+  }
+
   // Only items that have actually sold can be missing something. Unsold items can stay blank.
   function concNeedsMessage() {
     var list = ((state.data && state.data.concessions) || []).filter(function (it) { return it.needs; });
@@ -469,7 +480,7 @@
         var net = data.outputs && data.outputs.season_net ? data.outputs.season_net.value : "";
         status("Saved " + data.saved + " change" + (data.saved === 1 ? "" : "s") + "." +
                (net ? " Season net income is now " + net + "." : ""), "ok");
-        var needs = concNeedsMessage();
+        var needs = [concNeedsMessage(), cardOrderMessage()].filter(Boolean).join(" ");
         if (needs) status($("in-status").textContent + " " + needs, "ok");
       })
       .catch(function (e) {
