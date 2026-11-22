@@ -100,7 +100,7 @@ function squareSync_() {
       ok: true,
       at: Utilities.formatDate(new Date(), tz, 'MMM d, h:mm a'),
       orders: agg.counted,
-      days: touched.map(function (d) { var a = agg.byDay[d.idx]; return { label: d.label, orders: a.orders, sales: Math.round(a.sales * 100) / 100 }; }),
+      days: touched.map(function (d) { var a = agg.byDay[d.idx]; return { n: d.idx + 1, label: d.label, orders: a.orders, sales: Math.round(a.sales * 100) / 100 }; }),
       skipped: { orders: agg.skipped, amount: Math.round(agg.skippedAmt * 100) / 100 },
       newItems: newItems
     };

@@ -7,6 +7,7 @@
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="sponsors.css">
   <link rel="stylesheet" href="concessions.css">
+  <link rel="stylesheet" href="daytable.css">
 </head>
 <body>
   <a class="skip-link" href="#main">Skip to content</a>
@@ -16,6 +17,7 @@
       <a href="#overview">Overview</a>
       <a href="#pnl">Season P&amp;L</a>
       <a href="#weekly">Weekly Results</a>
+      <a href="#gamedays">Game Days</a>
       <a href="#setup">Setup</a>
       <a href="#concessions">Concessions</a>
       <a href="#schedule">Schedule</a>
@@ -285,6 +287,14 @@
     </section>
     <!-- ===== END: Weekly Results ===== -->
 
+    <!-- ===== START: Game Days (every game day at a glance; daytable.js + gamedays.js) ===== -->
+    <section id="gamedays" class="section">
+      <h2>Game Days</h2>
+      <p class="muted">Every game day in one view. Hover the ticket count for the cash/card split. To change a day's numbers, use Enter Data.</p>
+      <div class="card" id="gd-table"><p class="muted">Loading…</p></div>
+    </section>
+    <!-- ===== END: Game Days ===== -->
+
     <!-- ===== START: Setup / Assumptions ===== -->
     <section id="setup" class="section">
       <h2>Setup / Assumptions</h2>
@@ -541,5 +551,7 @@
   <script src="app.js"></script>
   <script src="sponsors.js"></script>
   <script src="concessions.js"></script>
+  <script src="daytable.js"></script>
+  <script src="gamedays.js"></script>
 </body>
 </html>

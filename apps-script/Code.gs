@@ -287,6 +287,11 @@ function buildPayload_(ss) {
       revenue: dd[DAY_INFO.revenue - 1][n],
       cost: dd[DAY_INFO.cost - 1][n],
       net: dd[DAY_INFO.net - 1][n],
+      // For the all-game-days table (display strings straight from the sheet).
+      iso: (dv[DAY_INFO.date - 1][n] instanceof Date) ? Utilities.formatDate(dv[DAY_INFO.date - 1][n], tz, 'yyyy-MM-dd') : '',
+      admissions: dd[21][n],   // row 22 total admission revenue
+      concessions: dd[32][n],  // row 33 concession revenue
+      squareFees: dd[62][n],   // row 63 Square card fees
       values: values,
       conc: concQty
     });

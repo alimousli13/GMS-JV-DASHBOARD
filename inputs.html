@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Kenny League — Enter Data</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="daytable.css">
 </head>
 <body class="inputs-page">
   <a class="skip-link" href="#main">Skip to content</a>
@@ -51,6 +52,11 @@
     </div>
 
     <section class="in-panel" id="panel-days" data-panel="days">
+      <details class="card in-alldays" id="in-alldays-box" open>
+        <summary>All game days</summary>
+        <div id="in-alldays"></div>
+        <p class="note">Click a day to open it below. Numbers reflect the last save.</p>
+      </details>
       <div class="card in-day-bar">
         <button type="button" class="btn" id="in-day-prev" aria-label="Previous day">‹</button>
         <select id="in-day-select" aria-label="Game day"></select>
@@ -121,6 +127,7 @@
   </div>
 
   <script src="config.js"></script>
+  <script src="daytable.js"></script>
   <script src="inputs.js"></script>
 </body>
 </html>

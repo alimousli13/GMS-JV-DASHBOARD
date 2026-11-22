@@ -262,6 +262,19 @@
     });
     sel.value = String(state.dayN);
 
+    var all = $("in-alldays");
+    if (all && window.KLDayTable) {
+      window.KLDayTable.render(all, state.data, {
+        selected: state.dayN,
+        edited: dayHasEdits,
+        onPick: function (n) {
+          goDay(n);
+          var bar = document.querySelector(".in-day-bar");
+          if (bar) bar.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+      });
+    }
+
     var d = findDay(state.dayN);
     var sum = $("in-day-summary");
     sum.innerHTML = "";
