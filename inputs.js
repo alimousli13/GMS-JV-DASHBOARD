@@ -295,13 +295,19 @@
     });
 
     var fields = state.data.dailyFields, metas = [], conc = concMetasForDay(d.n), placed = false;
+    var noConc = !dayHasConc(d.n);
     fields.forEach(function (f, i) {
-      metas.push(state.meta["day" + d.n + "_" + f.field]);
+      var skip = noConc && f.field === "card_conc_small" && !(Number(current("day" + d.n + "_card_conc_small")) > 0);
+      if (!skip) metas.push(state.meta["day" + d.n + "_" + f.field]);
       var lastAdmission = f.group === "Admissions" && (!fields[i + 1] || fields[i + 1].group !== "Admissions");
       if (lastAdmission) { metas = metas.concat(conc); placed = true; }
     });
     if (!placed) metas = metas.concat(conc);
     renderGroups($("in-day-fields"), metas);
+    if (noConc) {
+      var host = $("in-day-fields");
+      host.insertBefore(el("p", "note in-noconc", "Sports complex only: concessions are sold at the church, so there are no snack numbers to enter for this day."), host.firstChild);
+    }
 
     $("in-day-prev").disabled = days[0].n === d.n;
     $("in-day-next").disabled = days[days.length - 1].n === d.n;
@@ -330,10 +336,15 @@
   }
 
   // Items to show on a game day: everything switched on, plus anything already sold that day
+  // Concessions are only sold at the church. Sports-complex-only days show no snack boxes
+  // (except an item that somehow already has a quantity that day, so it can be seen and fixed).
+  function dayHasConc(n) { var d = findDay(n); return !d || d.hasConcessions !== false; }
+
   function concMetasForDay(n) {
+    var open = dayHasConc(n);
     return ((state.data && state.data.concessions) || []).filter(function (it) {
       var qty = Number(current("conc_" + n + "_" + it.id)) || 0;
-      return current("citem:" + it.id + ":active") === "1" || qty > 0;
+      return qty > 0 || (open && current("citem:" + it.id + ":active") === "1");
     }).map(function (it) {
       var m = state.meta["conc_" + n + "_" + it.id];
       m.label = current("citem:" + it.id + ":name") || it.name;

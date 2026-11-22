@@ -292,6 +292,8 @@ function buildPayload_(ss) {
       admissions: dd[21][n],   // row 22 total admission revenue
       concessions: dd[32][n],  // row 33 concession revenue
       squareFees: dd[62][n],   // row 63 Square card fees
+      // Concessions are only sold at the church (rows 12/13 = sports complex / church that day).
+      hasConcessions: Number(dv[12][n]) === 1,
       values: values,
       conc: concQty
     });

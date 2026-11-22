@@ -107,6 +107,8 @@ function squareSync_() {
     summary.text = 'Synced ' + summary.orders + ' Square sale' + (summary.orders === 1 ? '' : 's') + ' into ' +
       touched.length + ' game day' + (touched.length === 1 ? '' : 's') + '.' +
       (newItems.length ? ' New concession items added: ' + newItems.join(', ') + ' (add their cost).' : '') +
+      (Object.keys(agg.concAtComplex).length ? ' Check: Square has concession sales on a sports-complex-only day (' +
+        Object.keys(agg.concAtComplex).join(', ') + '). Concessions are only sold at the church, so the sale date in Square may be wrong. They were still counted.' : '') +
       (agg.skipped ? ' Skipped ' + agg.skipped + ' sale' + (agg.skipped === 1 ? '' : 's') + ' ($' + summary.skipped.amount.toFixed(2) + ') on days with no games.' : '');
     props.setProperty(SQ.prop, JSON.stringify(summary));
     getLogSheet_(ss).appendRow([new Date(), 'Square sync', 'Square sync', '', summary.text]);
@@ -195,17 +197,19 @@ function sqGameDays_(ss, tz) {
   var dt = ss.getSheetByName(SHEET.daily);
   var dates = dt.getRange(SQ.dateRow, DAY_FIRST_COL, 1, DAY_COUNT).getValues()[0];
   var heads = dt.getRange(SQ.headRow, DAY_FIRST_COL, 1, DAY_COUNT).getDisplayValues()[0];
+  var church = dt.getRange(13, DAY_FIRST_COL, 1, DAY_COUNT).getValues()[0]; // row 13: church that day (1/0)
   var out = [];
   dates.forEach(function (v, i) {
     if (!(v instanceof Date)) return;
-    out.push({ idx: i, date: Utilities.formatDate(v, tz, 'yyyy-MM-dd'), label: String(heads[i] || ('Day ' + (i + 1))).split('\n')[0] });
+    out.push({ idx: i, date: Utilities.formatDate(v, tz, 'yyyy-MM-dd'), label: String(heads[i] || ('Day ' + (i + 1))).split('\n')[0],
+               church: Number(church[i]) === 1 });
   });
   return out.sort(function (a, b) { return a.date < b.date ? -1 : 1; });
 }
 
 function sqAggregate_(orders, feesByOrder, days, tz) {
   var byDate = {}; days.forEach(function (d) { byDate[d.date] = d; });
-  var res = { byDay: {}, counted: 0, skipped: 0, skippedAmt: 0, prices: {}, names: {} };
+  var res = { byDay: {}, counted: 0, skipped: 0, skippedAmt: 0, prices: {}, names: {}, concAtComplex: {} };
 
   orders.forEach(function (o) {
     var tenders = (o.tenders || []).filter(function (t) { return t.type !== 'NO_SALE'; });
@@ -245,6 +249,7 @@ function sqAggregate_(orders, feesByOrder, days, tz) {
       if (SQ.pass.test(name)) { a.other += lineTotal; return; }
       var key = sqNorm_(name);
       a.conc[key] = (a.conc[key] || 0) + qty;
+      if (!day.church) res.concAtComplex[day.label] = true; // concessions are only sold at the church
       res.names[key] = name;
       if (li.base_price_money) res.prices[key] = sqMoney_(li.base_price_money);
     });

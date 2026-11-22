@@ -22,3 +22,5 @@
 .dt-note { font-size: 0.8rem; color: var(--color-muted, #5b6573); margin: 0.5rem 0 0; }
 .in-alldays > summary { cursor: pointer; font-weight: 700; padding: 0.25rem 0; }
 .in-alldays[open] > summary { margin-bottom: 0.75rem; }
+.dt-na { color: var(--color-muted, #5b6573); font-size: 0.8rem; }
+.dt-flag { color: var(--color-warning-text, #8a5300); font-weight: 700; }

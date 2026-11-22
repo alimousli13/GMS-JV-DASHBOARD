@@ -110,7 +110,15 @@
       if (cash + card) tk.appendChild(el("span", "dt-sub", cash + " cash · " + card + " card"));
       tr.appendChild(tk);
       tr.appendChild(el("td", "num", money(adm)));
-      tr.appendChild(el("td", "num", money(conc)));
+      if (d.hasConcessions === false && !conc) {
+        var nc = el("td", "num dt-na", "Not sold");
+        nc.title = "Concessions are only sold at the church";
+        tr.appendChild(nc);
+      } else {
+        var cc = el("td", "num" + (d.hasConcessions === false ? " dt-flag" : ""), money(conc));
+        if (d.hasConcessions === false) cc.title = "Concession sales on a sports-complex-only day: check the date";
+        tr.appendChild(cc);
+      }
       tr.appendChild(el("td", "num", money(rev)));
       tr.appendChild(el("td", "num", money(cost)));
       tr.appendChild(el("td", "num " + (net < 0 ? "negative" : net > 0 ? "positive" : ""), money(net)));
