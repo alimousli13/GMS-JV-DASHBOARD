@@ -396,8 +396,37 @@
     if (input) input.focus();
   }
 
+  function renderSquare() {
+    var sq = state.data && state.data.square, box = $("in-square");
+    if (!box) return;
+    box.hidden = !(sq && sq.connected);
+    if (box.hidden) return;
+    var last = sq.last, t = $("in-square-text");
+    t.className = "in-square-text";
+    if (!last) t.textContent = "Square is connected. Not synced yet.";
+    else if (last.ok === false) { t.textContent = "Last Square sync failed (" + last.at + "): " + last.error; t.className += " is-error"; }
+    else t.textContent = "Square: last synced " + last.at + " · " + last.orders + " sale" + (last.orders === 1 ? "" : "s") + " across " + (last.days || []).length + " game day" + ((last.days || []).length === 1 ? "" : "s") + ".";
+  }
+
+  function squareSync() {
+    if (!state.passcode) { status("Enter the editing passcode first.", "error"); $("in-passcode").focus(); return; }
+    if (Object.keys(state.edits).length) { status("Save or discard your changes before syncing from Square.", "error"); return; }
+    var btn = $("in-square-sync");
+    btn.disabled = true; btn.textContent = "Syncing…";
+    status("Pulling sales from Square…", "info");
+    api({ passcode: state.passcode, action: "square_sync" })
+      .then(function (data) {
+        ingest(data);
+        renderAll();
+        status((data.syncSummary && data.syncSummary.text) || "Synced from Square.", "ok");
+      })
+      .catch(function (e) { status("Square sync failed: " + e.message, "error"); })
+      .then(function () { btn.disabled = false; btn.textContent = "Sync from Square now"; });
+  }
+
   function renderAll() {
     $("in-loading").hidden = true;
+    renderSquare();
     renderDays();
     renderGroups($("in-prices-fields"), state.data.fields.filter(function (f) { return f.panel === "prices"; }).map(function (f) { return state.meta[f.key]; }));
     renderGroups($("in-funding-fields"), state.data.fields.filter(function (f) { return f.panel === "funding"; }).map(function (f) { return state.meta[f.key]; }));
@@ -504,6 +533,8 @@
   function wire() {
     var addBtn = $("in-conc-add");
     if (addBtn) addBtn.addEventListener("click", addConc);
+    var sqBtn = $("in-square-sync");
+    if (sqBtn) sqBtn.addEventListener("click", squareSync);
     Array.prototype.forEach.call(document.querySelectorAll("[data-goto]"), function (b) {
       b.addEventListener("click", function () {
         var tab = document.querySelector('.in-tab[data-tab="' + b.getAttribute("data-goto") + '"]');

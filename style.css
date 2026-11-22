@@ -491,3 +491,8 @@ tfoot td {
 .sched-table tr.sched-newday td { border-top: 2px solid var(--color-border); }
 .sched-hl { font-weight: 700; color: var(--color-navy); }
 /* ===== END: Schedule section ===== */
+
+/* Square sync bar (Enter Data → Game Days) */
+.in-square { display: flex; gap: 1rem; align-items: center; justify-content: space-between; flex-wrap: wrap; }
+.in-square-text { margin: 0 0 0.25rem; font-weight: 600; }
+.in-square-text.is-error { color: var(--color-error-text, #b42318); }

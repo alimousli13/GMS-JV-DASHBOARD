@@ -56,6 +56,13 @@
         <select id="in-day-select" aria-label="Game day"></select>
         <button type="button" class="btn" id="in-day-next" aria-label="Next day">›</button>
       </div>
+      <div class="card in-square" id="in-square" hidden>
+        <div>
+          <p class="in-square-text" id="in-square-text"></p>
+          <p class="note">Game days with Square sales are filled in from Square automatically every night. You can still type over them, but the next sync replaces those numbers with Square's.</p>
+        </div>
+        <button type="button" class="btn" id="in-square-sync">Sync from Square now</button>
+      </div>
       <div class="kpi-grid in-day-summary" id="in-day-summary"></div>
       <p class="note">Day totals reflect the last save. Prices and costs for every day come from the <em>Prices, Costs &amp; Rates</em> tab.</p>
       <div id="in-day-fields" class="in-groups"></div>

@@ -157,3 +157,12 @@ If a change also needs a one-time sheet update (like the schedule import), run i
 - **Numbers show "—" / banner "Live data unavailable":** open the `API_URL` in a browser; it should start with `{"ok":true`. If not, check Apps Script → Executions for errors.
 - **Schedule box shows a message:** it says why (API not responding, or Apps Script needs redeploying via `./deploy.sh`).
 - **Enter Data says "Wrong passcode":** the passcode is in Apps Script → Project Settings → Script properties → `EDIT_PASSCODE`.
+
+## Square sync (apps-script/Square.gs)
+
+Square sales fill the game-day numbers automatically: tickets (cash/card), $1 card-fee orders, concession quantities, other Square sales and Square's actual fees. It runs nightly (~11:30 PM) and from **Enter Data → Game Days → Sync from Square now** or the sheet menu **Kenny League → Sync Square now**.
+
+- The Square token lives ONLY in Apps Script → Project Settings → Script properties as `SQUARE_TOKEN`. Never put it in code, GitHub, chat, text or email.
+- In-person sales count on the game day they happened; sales on non-game days are skipped (shown in the sync summary). Online tickets count for the next game day within 14 days.
+- Days with no Square sales are never touched. Days with Square sales get Square's numbers (manual typing on those days is replaced at the next sync).
+- Items sold in Square that aren't on the Concessions tab are added automatically (cost left blank). Square item names must match the Concessions tab names.

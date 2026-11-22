@@ -98,6 +98,12 @@ var CONC = { sheet: 'Concessions', first: 3, last: 300, dayCol: 6, width: 29 };
 var CONC_FIELDS = { name: { col: 'A', type: 'text' }, price: { col: 'B', type: 'money' },
                     cost: { col: 'C', type: 'money' }, active: { col: 'D', type: 'bool' } };
 
+// Shared by setupCardFee (Code.gs) and the Square sync (Square.gs).
+var CARD_FEE_FORMULAS = {
+  revenue:    '=IF(ISNUMBER({c}33),SUM({c}22,{c}33,{c}34,{c}29,{c}32),"Set small price")',
+  squareFees: '=IF(ISNUMBER({c}62),IF(N({c}30)>0,{c}30,{c}62*{c}60+MAX({c}59,{c}24+{c}27)*{c}61),"Set small price")'
+};
+
 var DAY_INFO = { label: 5, dayName: 7, week: 8, date: 9, games: 11, revenue: 35, cost: 71, net: 72 };
 
 /* ======================= Sheet menu ======================= */
@@ -109,6 +115,9 @@ function onOpen() {
     .addItem('Recalculate church rent from schedule', 'updateChurchRent')
     .addItem('Set up concession item list', 'setupConcessions')
     .addItem('Apply card fees ($1 per order, Square 2.3% + 15¢)', 'setupCardFee')
+    .addSeparator()
+    .addItem('Sync Square now', 'squareSyncNow')
+    .addItem('Turn on nightly Square sync', 'squareTurnOnNightly')
     .addToUi();
 }
 
@@ -154,6 +163,12 @@ function doPost(e) {
     if (body.action === 'sponsors_list' || body.action === 'sponsors_save') {
       lock.waitLock(20000);
       return json_(sponsorHandle_(body));
+    }
+    if (body.action === 'square_sync') {
+      var sync = squareSync_(); // takes its own lock
+      var after = buildPayload_(SpreadsheetApp.getActive());
+      after.syncSummary = sync;
+      return json_(after);
     }
     if (body.action) return json_({ ok: false, error: 'Unknown action.' });
 
@@ -289,7 +304,8 @@ function buildPayload_(ss) {
       return { id: it.id, name: it.name, price: it.price, cost: it.cost, active: it.active,
                sold: it.sold, revenue: it.revenue, profit: it.profit, needs: it.needs };
     }),
-    dailyFields: DAILY_FIELDS.map(function (f) { return { field: f.field, label: f.label, type: f.type, group: f.group, hint: f.hint || '' }; })
+    dailyFields: DAILY_FIELDS.map(function (f) { return { field: f.field, label: f.label, type: f.type, group: f.group, hint: f.hint || '' }; }),
+    square: squareStatus_()
   };
 }
 
@@ -819,7 +835,7 @@ function setupCardFee() {
   cols(28).setFormulas(f('=Setup!$B$17')).setBackground(null).setFontColor(BLACK).setNumberFormat(MONEY);
   cols(29).setFormulas(f('={c}27*{c}28')).setBackground(null).setFontColor(BLACK).setNumberFormat(MONEY);
   label(dt, 'A35', 'TOTAL EVENT REVENUE');
-  cols(35).setFormulas(f('=IF(ISNUMBER({c}33),SUM({c}22,{c}33,{c}34,{c}29),"Set small price")'));
+  cols(35).setFormulas(f(CARD_FEE_FORMULAS.revenue));
 
   // ---- Daily Tracker: what Square charges ----
   label(dt, 'A59', 'All card payments (0 = ticket orders + small concession orders)');
@@ -828,7 +844,7 @@ function setupCardFee() {
   label(dt, 'A62', 'Card sales total (tickets, fees, card share of concessions)');
   label(dt, 'A63', 'Square card fees (2.3% + 15¢ per sale)');
   cols(62).setFormulas(f('=IF(ISNUMBER({c}35),{c}21+{c}33*{c}58+{c}29,"Set small price")'));
-  cols(63).setFormulas(f('=IF(ISNUMBER({c}62),{c}62*{c}60+MAX({c}59,{c}24+{c}27)*{c}61,"Set small price")'));
+  cols(63).setFormulas(f(CARD_FEE_FORMULAS.squareFees));
 
   // Old item-cost rows that multiplied rows 24/27; not in any total, blank them so they can't mislead.
   [40, 41].forEach(function (r) { dt.getRange(r, 1).setValue('(not used)').setFontColor('#999999'); cols(r).setValue(0); });
