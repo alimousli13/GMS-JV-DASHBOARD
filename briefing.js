@@ -175,6 +175,10 @@
       else if (last.atIso && (Date.now() - new Date(last.atIso).getTime()) > 36 * 3600 * 1000)
         items.push({ text: "Square last synced " + last.at + ". The nightly sync may be off.", href: "inputs.html", action: "Sync now" });
     }
+    if (sq && sq.last && sq.last.custom && sq.last.custom.count > 0) items.push({
+      text: plural(sq.last.custom.count, "sale") + " (" + F.money(sq.last.custom.amount, { whole: true }) + ") were rung up in Square as a Custom Amount, so they can't count as tickets or snacks. At the register, tap the item instead.",
+      href: "", action: ""
+    });
     if (owed > 0) items.push({ text: F.money(owed, { whole: true }) + " in team fees still to collect.", href: "inputs.html#funding", action: "Record payments" });
     return items;
   }
@@ -226,8 +230,7 @@
       items.forEach(function (it) {
         var li = el("li", it.urgent ? "is-urgent" : "");
         li.appendChild(el("span", "", it.text + " "));
-        var a = el("a", "", it.action); a.href = it.href;
-        li.appendChild(a);
+        if (it.href) { var a = el("a", "", it.action); a.href = it.href; li.appendChild(a); }
         ul.appendChild(li);
       });
       att.appendChild(ul);

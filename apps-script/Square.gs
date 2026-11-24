@@ -30,10 +30,11 @@ var SQ = {
   rows: { cash: 16, card: 19, cardOrders: 24, concSmall: 27, fees: 30, other: 32, cardTxns: 59 },
   dateRow: 9, headRow: 5,
   onlineLookbackDays: 14,
-  ticket: /ticket/i,
+  ticket: /ticket|entrance|admission/i,   // e.g. "GMS game ticket", "Jamboree Entrance"
   online: /online/i,
   pass: /season/i,
-  prop: 'SQUARE_LAST_SYNC'
+  prop: 'SQUARE_LAST_SYNC',
+  otherTab: 'Square Other Sales'
 };
 
 /* ---------- Entry points ---------- */
@@ -94,6 +95,7 @@ function squareSync_() {
 
     var agg = sqAggregate_(orders, fees, days, tz);
     var newItems = sqWrite_(ss, agg, days);
+    sqWriteOther_(ss, agg);
 
     var touched = days.filter(function (d) { return agg.byDay[d.idx]; });
     var summary = {
@@ -103,7 +105,9 @@ function squareSync_() {
       orders: agg.counted,
       days: touched.map(function (d) { var a = agg.byDay[d.idx]; return { n: d.idx + 1, label: d.label, orders: a.orders, sales: Math.round(a.sales * 100) / 100 }; }),
       skipped: { orders: agg.skipped, amount: Math.round(agg.skippedAmt * 100) / 100 },
-      newItems: newItems
+      newItems: newItems,
+      custom: { count: agg.custom.count, amount: Math.round(agg.custom.amount * 100) / 100 },
+      passes: { count: agg.passes.count, amount: Math.round(agg.passes.amount * 100) / 100 }
     };
     summary.text = 'Synced ' + summary.orders + ' Square sale' + (summary.orders === 1 ? '' : 's') + ' into ' +
       touched.length + ' game day' + (touched.length === 1 ? '' : 's') + '.' +
@@ -210,7 +214,8 @@ function sqGameDays_(ss, tz) {
 
 function sqAggregate_(orders, feesByOrder, days, tz) {
   var byDate = {}; days.forEach(function (d) { byDate[d.date] = d; });
-  var res = { byDay: {}, counted: 0, skipped: 0, skippedAmt: 0, prices: {}, names: {}, concAtComplex: {} };
+  var res = { byDay: {}, counted: 0, skipped: 0, skippedAmt: 0, prices: {}, names: {}, concAtComplex: {}, otherLines: [],
+              custom: { count: 0, amount: 0 }, passes: { count: 0, amount: 0 } };
 
   orders.forEach(function (o) {
     var tenders = (o.tenders || []).filter(function (t) { return t.type !== 'NO_SALE'; });
@@ -227,7 +232,15 @@ function sqAggregate_(orders, feesByOrder, days, tz) {
         return gap >= 0 && gap <= SQ.onlineLookbackDays;
       })[0];
     }
-    if (!day) { res.skipped++; res.skippedAmt += total; return; }
+    var paidBy = (o.tenders || []).some(function (t) { return t.type === 'CASH'; }) ? 'Cash' : 'Card';
+    if (!day) {
+      res.skipped++; res.skippedAmt += total;
+      lines.forEach(function (li) {
+        res.otherLines.push([date, 'Skipped: no game that day', '', sqMoney_(li.gross_sales_money || li.total_money),
+                             String(li.name || 'Custom amount'), String(li.note || o.note || ''), paidBy]);
+      });
+      return;
+    }
 
     var a = res.byDay[day.idx] = res.byDay[day.idx] ||
       { cash: 0, card: 0, cardOrders: 0, concSmall: 0, cardTxns: 0, fees: 0, other: 0, conc: {}, orders: 0, sales: 0 };
@@ -245,9 +258,16 @@ function sqAggregate_(orders, feesByOrder, days, tz) {
       var name = String(li.name || '').trim();
       var qty = Math.round(Number(li.quantity) || 0);
       var lineTotal = sqMoney_(li.gross_sales_money || li.total_money);
-      if (li.item_type === 'CUSTOM_AMOUNT' || !name) { a.other += lineTotal; return; }
+      if (li.item_type === 'CUSTOM_AMOUNT' || !name || SQ.pass.test(name)) {
+        a.other += lineTotal;
+        var bucket = SQ.pass.test(name) ? res.passes : res.custom;
+        bucket.count += SQ.pass.test(name) ? (Math.round(Number(li.quantity) || 1)) : 1;
+        bucket.amount += lineTotal;
+        res.otherLines.push([date, SQ.pass.test(name) ? 'Season pass' : 'Custom amount (not itemized)', day.label, lineTotal,
+                             name || 'Custom amount', String(li.note || o.note || ''), paidBy]);
+        return;
+      }
       if (SQ.ticket.test(name)) { tickets += qty; return; }
-      if (SQ.pass.test(name)) { a.other += lineTotal; return; }
       var key = sqNorm_(name);
       a.conc[key] = (a.conc[key] || 0) + qty;
       if (!day.church) res.concAtComplex[day.label] = true; // concessions are only sold at the church
@@ -304,6 +324,9 @@ function sqWrite_(ss, agg, days) {
     byName[k] = row; added.push(agg.names[k]);
   });
 
+  // Anything named like a ticket is admission, not a concession: hide it from the snack list.
+  items.forEach(function (it) { if (SQ.ticket.test(it.name) && Number(it.active) === 1) sh.getRange(it.row, 4).setValue(0); });
+
   var last = Math.max(nextRow - 1, CONC.first);
   var qtyRng = sh.getRange(CONC.first, CONC.dayCol, last - CONC.first + 1, DAY_COUNT), qty = qtyRng.getValues();
   var names = sh.getRange(CONC.first, 1, last - CONC.first + 1, 1).getValues();
@@ -314,6 +337,23 @@ function sqWrite_(ss, agg, days) {
   });
   qtyRng.setValues(qty);
   return added;
+}
+
+/* ---------- "Square Other Sales" tab ----------
+   Every Square sale that isn't a ticket or a listed snack (custom amounts, passes), plus sales skipped
+   because no game was scheduled that day. Rewritten on every sync so it always matches Square.
+   This is where to spot team fees or sponsorships rung up as custom amounts (they belong on Funding). */
+function sqWriteOther_(ss, agg) {
+  var sh = ss.getSheetByName(SQ.otherTab) || ss.insertSheet(SQ.otherTab);
+  sh.clear();
+  var head = [['Date', 'Counted as', 'Game day', 'Amount', 'Item in Square', 'Note in Square', 'Paid by']];
+  var rows = agg.otherLines.slice().sort(function (a, b) { return a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0; });
+  sh.getRange(1, 1, 1, 7).setValues(head).setFontWeight('bold');
+  if (rows.length) {
+    sh.getRange(2, 1, rows.length, 7).setValues(rows);
+    sh.getRange(2, 4, rows.length, 1).setNumberFormat('$#,##0.00');
+  }
+  sh.setFrozenRows(1);
 }
 
 /* ---------- One-time sheet prep (safe to repeat) ----------
