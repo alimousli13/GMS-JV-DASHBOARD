@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Kenny League — Enter Data</title>
+  <title>GMS JV League — Enter Data</title>
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="daytable.css">
 </head>
@@ -12,16 +12,15 @@
 
   <nav class="site-nav" aria-label="Site">
     <div class="site-nav-inner">
-      <a href="index.html">← Dashboard</a>
+      <a href="index.html" class="nav-back"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg> Dashboard</a>
       <a href="inputs.html" class="nav-cta" aria-current="page">Enter Data</a>
     </div>
   </nav>
 
   <main id="main" class="page">
     <header class="page-header">
-      <h1>Enter Data</h1>
-      <p class="subtitle">Changes save straight into the league's Google Sheet. The sheet recalculates and the dashboard updates.</p>
-      <p class="last-updated">Sheet read at: <span id="in-server-time">—</span></p>
+      <h1>Enter data</h1>
+      <p class="subtitle">Saves straight into the league's Google Sheet, and the dashboard updates. Sheet read <span id="in-server-time">—</span>.</p>
     </header>
 
     <!-- Passcode -->
@@ -35,7 +34,7 @@
         <label class="in-remember"><input type="checkbox" id="in-remember" checked> Remember on this device</label>
       </form>
       <div id="in-unlocked" class="in-unlocked" hidden>
-        <span>✓ Unlocked for editing</span>
+        <span>Unlocked for editing</span>
         <button type="button" class="btn btn-link" id="in-forget">Lock</button>
       </div>
     </section>
@@ -43,39 +42,35 @@
     <div id="in-status" class="in-status" role="status" aria-live="polite" hidden></div>
 
     <!-- Tabs -->
-    <div class="in-tabs" role="tablist">
-      <button type="button" role="tab" class="in-tab is-active" data-tab="days">Game Days</button>
-      <button type="button" role="tab" class="in-tab" data-tab="conc">Concessions</button>
-      <button type="button" role="tab" class="in-tab" data-tab="prices">Prices, Costs &amp; Rates</button>
-      <button type="button" role="tab" class="in-tab" data-tab="rentals">Weekly Rentals</button>
-      <button type="button" role="tab" class="in-tab" data-tab="funding">Funding</button>
+    <div class="in-tabs" role="tablist" aria-label="What to edit">
+      <button type="button" role="tab" class="in-tab is-active" id="tab-days" data-tab="days" aria-selected="true" aria-controls="panel-days">Game nights</button>
+      <button type="button" role="tab" class="in-tab" id="tab-conc" data-tab="conc" aria-selected="false" aria-controls="panel-conc" tabindex="-1">Concessions</button>
+      <button type="button" role="tab" class="in-tab" id="tab-prices" data-tab="prices" aria-selected="false" aria-controls="panel-prices" tabindex="-1">Prices &amp; rates</button>
+      <button type="button" role="tab" class="in-tab" id="tab-rentals" data-tab="rentals" aria-selected="false" aria-controls="panel-rentals" tabindex="-1">Weekly rentals</button>
+      <button type="button" role="tab" class="in-tab" id="tab-funding" data-tab="funding" aria-selected="false" aria-controls="panel-funding" tabindex="-1">Funding</button>
     </div>
 
-    <section class="in-panel" id="panel-days" data-panel="days">
-      <details class="card in-alldays" id="in-alldays-box" open>
-        <summary>All game days</summary>
+    <section class="in-panel" id="panel-days" data-panel="days" role="tabpanel" aria-labelledby="tab-days">
+      <details class="card in-alldays" id="in-alldays-box">
+        <summary>All game nights <span class="in-alldays-glance" id="in-alldays-glance"></span></summary>
         <div id="in-alldays"></div>
-        <p class="note">Click a day to open it below. Numbers reflect the last save.</p>
+        <p class="note">Tap a night to open it below. Numbers reflect the last save.</p>
       </details>
       <div class="card in-day-bar">
-        <button type="button" class="btn" id="in-day-prev" aria-label="Previous day">‹</button>
-        <select id="in-day-select" aria-label="Game day"></select>
-        <button type="button" class="btn" id="in-day-next" aria-label="Next day">›</button>
+        <button type="button" class="btn btn-icon" id="in-day-prev" aria-label="Previous game night" title="Previous game night ( [ )"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></button>
+        <select id="in-day-select" aria-label="Game night"></select>
+        <button type="button" class="btn btn-icon" id="in-day-next" aria-label="Next game night" title="Next game night ( ] )"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></button>
       </div>
-      <div class="card in-square" id="in-square" hidden>
-        <div>
-          <p class="in-square-text" id="in-square-text"></p>
-          <p class="note">Game days with Square sales are filled in from Square automatically every night. You can still type over them, but the next sync replaces those numbers with Square's.</p>
-        </div>
-        <button type="button" class="btn" id="in-square-sync">Sync from Square now</button>
+      <p class="in-day-line" id="in-day-summary" aria-live="polite"></p>
+      <div class="in-square" id="in-square" hidden>
+        <p class="in-square-text" id="in-square-text"></p>
+        <button type="button" class="btn btn-small" id="in-square-sync">Sync now</button>
       </div>
-      <div class="kpi-grid in-day-summary" id="in-day-summary"></div>
-      <p class="note">Day totals reflect the last save. Prices and costs for every day come from the <em>Prices, Costs &amp; Rates</em> tab.</p>
       <div id="in-day-fields" class="in-groups"></div>
       <p class="note">Selling something that isn't listed? <button type="button" class="btn btn-link" data-goto="conc">Add it on the Concessions tab</button></p>
     </section>
 
-    <section class="in-panel" id="panel-conc" data-panel="conc" hidden>
+    <section class="in-panel" id="panel-conc" data-panel="conc" role="tabpanel" aria-labelledby="tab-conc" hidden>
       <div class="card">
         <h3>Concession items</h3>
         <p class="note">Everything sold at the table. Add an item and its price and cost whenever you know them; blanks are fine until an item sells. Untick <b>Selling</b> to hide an item from game days (past sales stay in the totals).</p>
@@ -90,14 +85,14 @@
       </div>
     </section>
 
-    <section class="in-panel" id="panel-prices" data-panel="prices" hidden>
+    <section class="in-panel" id="panel-prices" data-panel="prices" role="tabpanel" aria-labelledby="tab-prices" hidden>
       <div id="in-prices-fields" class="in-groups"></div>
     </section>
 
-    <section class="in-panel" id="panel-rentals" data-panel="rentals" hidden>
+    <section class="in-panel" id="panel-rentals" data-panel="rentals" role="tabpanel" aria-labelledby="tab-rentals" hidden>
       <div class="card">
         <h3>Weekly rentals</h3>
-        <p class="note">Court rent is a flat weekly amount. Church rent is calculated automatically: hourly rate × hours booked from the schedule (set the rate on the <em>Prices, Costs &amp; Rates</em> tab).</p>
+        <p class="note">Court rent is a flat weekly amount. Church rent is calculated automatically: hourly rate × hours booked from the schedule (set the rate on the <em>Prices &amp; rates</em> tab).</p>
         <div class="table-wrap">
           <table class="in-rent-table">
             <thead><tr><th>Week</th><th>Court rental</th><th>Church rental <span class="in-auto">auto</span></th><th>Other fixed / week</th></tr></thead>
@@ -107,7 +102,7 @@
       </div>
     </section>
 
-    <section class="in-panel" id="panel-funding" data-panel="funding" hidden>
+    <section class="in-panel" id="panel-funding" data-panel="funding" role="tabpanel" aria-labelledby="tab-funding" hidden>
       <p class="note">Enter <strong>running totals</strong>: $500 received, then another $300 → enter $800.</p>
       <div id="in-funding-fields" class="in-groups"></div>
     </section>
@@ -127,6 +122,7 @@
   </div>
 
   <script src="config.js"></script>
+  <script src="format.js"></script>
   <script src="daytable.js"></script>
   <script src="inputs.js"></script>
 </body>

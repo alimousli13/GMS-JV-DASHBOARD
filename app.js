@@ -126,6 +126,15 @@
         el.classList.add("placeholder");
         continue;
       }
+      // Money that arrives as display text ("-$10,307.50" or "($500.00)") gets the one shared style.
+      if (window.KLFormat && (format === "currency" || window.KLFormat.isMoneyText(raw))) {
+        var amount = window.KLFormat.num(raw);
+        if (isFinite(amount)) {
+          el.textContent = window.KLFormat.money(amount);
+          if (el.hasAttribute("data-signed")) { var tone = window.KLFormat.tone(amount); if (tone) el.classList.add(tone); }
+          continue;
+        }
+      }
       if (!isNumericValue(raw) || format === "text") {
         var text = String(raw).trim();
         el.textContent = text;

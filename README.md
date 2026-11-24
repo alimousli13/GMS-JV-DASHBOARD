@@ -166,3 +166,10 @@ Square sales fill the game-day numbers automatically: tickets (cash/card), $1 ca
 - In-person sales count on the game day they happened; sales on non-game days are skipped (shown in the sync summary). Online tickets count for the next game day within 14 days.
 - Days with no Square sales are never touched. Days with Square sales get Square's numbers (manual typing on those days is replaced at the next sync).
 - Items sold in Square that aren't on the Concessions tab are added automatically (cost left blank). Square item names must match the Concessions tab names.
+
+## Dashboard layout (Nov 2026 redesign)
+
+- `briefing.js` / `briefing.css`: the top "Where the season stands" section: one-sentence answer, the bridge (cash net so far → team fees still owed → season floor), last/next game night, and a "Needs attention" list that links straight to the fix (`inputs.html#conc`, `#day-5`, `#funding`, `#prices`).
+- `format.js`: the one money style for both pages (losses as −$500 in red, never `($500)`). Use `KLFormat.money()` instead of writing your own formatter.
+- Section order: Overview → Game Days → P&L (prices/rates folded underneath) → Weekly results → Concessions → Funding → Schedule (folded) → Sponsors.
+- Enter Data opens on tonight's game night if there is one; `[` and `]` step between nights; arrow keys move between tabs.

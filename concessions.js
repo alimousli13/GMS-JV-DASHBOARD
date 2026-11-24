@@ -13,7 +13,7 @@
     var s = String(v === null || v === undefined ? "" : v).trim();
     if (s === "") return "";
     if (!/^-?\d+(\.\d+)?$/.test(s)) return s;
-    return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(Number(s));
+    return window.KLFormat ? window.KLFormat.money(Number(s)) : new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(Number(s));
   }
 
   function cell(text, cls) {
@@ -37,6 +37,8 @@
       body.appendChild(tr0);
       return;
     }
+    // Best sellers first, so the table reads as "what actually sells".
+    shown.sort(function (a, b) { return (Number(b.sold) || 0) - (Number(a.sold) || 0); });
     shown.forEach(function (it) {
       var tr = document.createElement("tr");
       tr.appendChild(cell(it.name));
@@ -46,7 +48,8 @@
       tr.appendChild(cost ? cell(cost, "num") : cell(it.needs === "cost" ? "Add cost" : "—", it.needs === "cost" ? "num cx-missing" : "num"));
       tr.appendChild(cell(it.sold === "" ? "0" : String(it.sold), "num"));
       tr.appendChild(cell(fmtMoney(it.revenue) || "—", "num"));
-      tr.appendChild(cell(fmtMoney(it.profit) || "—", "num"));
+      var profitTone = window.KLFormat && /^-?\d/.test(String(it.profit)) ? window.KLFormat.tone(it.profit) : "";
+      tr.appendChild(cell(fmtMoney(it.profit) || "—", "num " + profitTone));
       body.appendChild(tr);
     });
   });

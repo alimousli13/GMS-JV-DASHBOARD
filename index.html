@@ -3,11 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Kenny League — Season Dashboard</title>
+  <title>GMS JV League — Owner Dashboard</title>
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="sponsors.css">
   <link rel="stylesheet" href="concessions.css">
   <link rel="stylesheet" href="daytable.css">
+  <link rel="stylesheet" href="briefing.css">
 </head>
 <body>
   <a class="skip-link" href="#main">Skip to content</a>
@@ -15,13 +16,11 @@
   <nav class="site-nav" aria-label="Section">
     <div class="site-nav-inner">
       <a href="#overview">Overview</a>
-      <a href="#pnl">Season P&amp;L</a>
-      <a href="#weekly">Weekly Results</a>
       <a href="#gamedays">Game Days</a>
-      <a href="#setup">Setup</a>
+      <a href="#pnl">P&amp;L</a>
       <a href="#concessions">Concessions</a>
-      <a href="#schedule">Schedule</a>
       <a href="#funding">Funding</a>
+      <a href="#schedule">Schedule</a>
       <a href="#sponsors">Sponsors</a>
       <a href="inputs.html" class="nav-cta">Enter Data</a>
     </div>
@@ -29,73 +28,42 @@
 
   <div id="data-banner" class="data-banner" role="status" hidden>
     <p>Live data unavailable — showing placeholders.</p>
-    <button type="button" id="data-banner-dismiss" aria-label="Dismiss">×</button>
+    <button type="button" id="data-banner-dismiss" aria-label="Dismiss"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
   </div>
 
   <main id="main" class="page">
     <header class="page-header">
-      <h1>Kenny League — Season Dashboard</h1>
+      <h1>GMS JV League</h1>
       <p class="subtitle">
-        2026 JV Season ·
+        2026 season ·
         <span class="num placeholder" data-key="teams">—</span> teams ·
-        <span class="num placeholder" data-key="weeks">—</span> weeks ·
         <span class="num placeholder" data-key="game_days">—</span> game days ·
-        <span class="num placeholder" data-key="games">—</span> games
+        <span class="num placeholder" data-key="games">—</span> games ·
+        updated <span class="placeholder" data-key="last_updated">—</span>
       </p>
-      <p class="last-updated">Last updated: <span class="placeholder" data-key="last_updated">—</span></p>
     </header>
 
-    <!-- ===== START: Season Overview ===== -->
-    <section id="overview" class="section">
-      <h2>Season Overview</h2>
-      <div class="kpi-grid">
-        <article class="kpi">
-          <p class="kpi-label">Season Net Income</p>
-          <p class="kpi-value num placeholder" data-key="season_net" data-signed>—</p>
-        </article>
-        <article class="kpi">
-          <p class="kpi-label">Net Using Fees Received</p>
-          <p class="kpi-value num placeholder" data-key="net_fees_received" data-signed>—</p>
-        </article>
-        <article class="kpi">
-          <p class="kpi-label">Completed-Day Operating Net</p>
-          <p class="kpi-value num placeholder" data-key="completed_day_net" data-signed>—</p>
-        </article>
-        <article class="kpi">
-          <p class="kpi-label">Team Fee Budget</p>
-          <p class="kpi-value num placeholder" data-key="team_fee_budget">—</p>
-        </article>
-        <article class="kpi">
-          <p class="kpi-label">Team Fees Received</p>
-          <p class="kpi-value num placeholder" data-key="team_fees_received">—</p>
-        </article>
-        <article class="kpi">
-          <p class="kpi-label">Team Fees Still to Collect</p>
-          <p class="kpi-value num placeholder" data-key="team_fees_to_collect">—</p>
-        </article>
-        <article class="kpi">
-          <p class="kpi-label">Days Completed</p>
-          <p class="kpi-value num">
-            <span class="placeholder" data-key="days_completed">—</span>
-            of
-            <span class="placeholder" data-key="game_days">—</span>
-          </p>
-        </article>
-        <article class="kpi">
-          <p class="kpi-label">Games Scheduled</p>
-          <p class="kpi-value num placeholder" data-key="games">—</p>
-        </article>
-        <article class="kpi">
-          <p class="kpi-label">Missing Prices</p>
-          <p class="kpi-value num placeholder" data-key="missing_prices">—</p>
-        </article>
+    <!-- ===== START: Overview (briefing.js + briefing.css) ===== -->
+    <section id="overview" class="section" aria-labelledby="overview-h">
+      <h2 id="overview-h">Where the season stands</h2>
+      <div class="brief" id="brief" aria-busy="true">
+        <p class="brief-lede placeholder">Loading the latest numbers from the league sheet…</p>
       </div>
     </section>
-    <!-- ===== END: Season Overview ===== -->
+    <!-- ===== END: Overview ===== -->
+
+    <!-- ===== START: Game Days (every game day at a glance; daytable.js + gamedays.js) ===== -->
+    <section id="gamedays" class="section">
+      <h2>Game Days</h2>
+      <p class="section-note">Every game night at a glance. Concessions are only sold at the church, so sports-complex nights show “Not sold.” To change a night's numbers, use <a href="inputs.html">Enter Data</a>.</p>
+      <div class="card" id="gd-table"><p class="muted">Loading…</p></div>
+    </section>
+    <!-- ===== END: Game Days ===== -->
 
     <!-- ===== START: Season P&L ===== -->
     <section id="pnl" class="section">
       <h2>Season P&amp;L</h2>
+      <p class="section-note">Full-season budget: every team fee counted as expected, all rent and staff for the season, and game-night money taken in so far.</p>
       <div class="split">
         <div class="card">
           <h3>Revenue</h3>
@@ -109,7 +77,7 @@
               </thead>
               <tbody>
                 <tr>
-                  <td>Team fees (budget)</td>
+                  <td>Team fees (all teams, expected)</td>
                   <td class="num placeholder" data-key="rev_team_fees">—</td>
                 </tr>
                 <tr>
@@ -208,12 +176,89 @@
           </div>
         </div>
       </div>
+
+      <details class="card pnl-assumptions" id="setup">
+        <summary>Prices and rates behind these numbers</summary>
+        <p class="note">To change any of these, use <a href="inputs.html#prices">Enter Data → Prices, Costs &amp; Rates</a>.</p>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Assumption</th>
+                <th class="num">Value</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Teams</td>
+                <td class="num placeholder" data-key="teams">—</td>
+              </tr>
+              <tr>
+                <td>Fee per team</td>
+                <td class="num placeholder" data-key="fee_per_team">—</td>
+              </tr>
+              <tr>
+                <td>Sponsor portion of fee</td>
+                <td class="num placeholder" data-key="sponsor_portion">—</td>
+              </tr>
+              <tr>
+                <td>Player portion of fee</td>
+                <td class="num placeholder" data-key="player_portion">—</td>
+              </tr>
+              <tr>
+                <td>Referees per game</td>
+                <td class="num placeholder" data-key="refs_per_game">—</td>
+              </tr>
+              <tr>
+                <td>Referee rate (per game)</td>
+                <td class="num placeholder" data-key="ref_rate">—</td>
+              </tr>
+              <tr>
+                <td>Scorekeeper rate (per hour)</td>
+                <td class="num placeholder" data-key="scorekeeper_rate">—</td>
+              </tr>
+              <tr>
+                <td>Ticket price (cash)</td>
+                <td class="num placeholder" data-key="admission_cash">—</td>
+              </tr>
+              <tr>
+                <td>Ticket price (card, before fee)</td>
+                <td class="num placeholder" data-key="admission_card">—</td>
+              </tr>
+              <tr>
+                <td>Card fee (once per card ticket order)</td>
+                <td class="num placeholder" data-key="card_fee_order">—</td>
+              </tr>
+              <tr>
+                <td>Card fee (concession orders under $5)</td>
+                <td class="num placeholder" data-key="conc_card_fee">—</td>
+              </tr>
+              <tr>
+                <td>Square rate per card sale</td>
+                <td class="num placeholder" data-key="card_rate">—</td>
+              </tr>
+              <tr>
+                <td>Square fixed fee per card sale</td>
+                <td class="num placeholder" data-key="card_fee_txn">—</td>
+              </tr>
+              <tr>
+                <td>Insurance cost</td>
+                <td class="num placeholder" data-key="insurance_cost">—</td>
+              </tr>
+              <tr>
+                <td>Insurance refund expected</td>
+                <td class="num placeholder" data-key="insurance_refund_expected">—</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </details>
     </section>
     <!-- ===== END: Season P&L ===== -->
 
     <!-- ===== START: Weekly Results ===== -->
     <section id="weekly" class="section">
-      <h2>Weekly Results</h2>
+      <h2>Weekly results</h2>
       <div class="card">
         <div class="table-wrap">
           <table>
@@ -287,94 +332,6 @@
     </section>
     <!-- ===== END: Weekly Results ===== -->
 
-    <!-- ===== START: Game Days (every game day at a glance; daytable.js + gamedays.js) ===== -->
-    <section id="gamedays" class="section">
-      <h2>Game Days</h2>
-      <p class="muted">Every game day in one view. Hover the ticket count for the cash/card split. Concessions are only sold at the church, so sports-complex-only days show “Not sold.” To change a day's numbers, use Enter Data.</p>
-      <div class="card" id="gd-table"><p class="muted">Loading…</p></div>
-    </section>
-    <!-- ===== END: Game Days ===== -->
-
-    <!-- ===== START: Setup / Assumptions ===== -->
-    <section id="setup" class="section">
-      <h2>Setup / Assumptions</h2>
-      <div class="card">
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Assumption</th>
-                <th class="num">Value</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>Teams</td>
-                <td class="num placeholder" data-key="teams">—</td>
-              </tr>
-              <tr>
-                <td>Fee per team</td>
-                <td class="num placeholder" data-key="fee_per_team">—</td>
-              </tr>
-              <tr>
-                <td>Sponsor portion of fee</td>
-                <td class="num placeholder" data-key="sponsor_portion">—</td>
-              </tr>
-              <tr>
-                <td>Player portion of fee</td>
-                <td class="num placeholder" data-key="player_portion">—</td>
-              </tr>
-              <tr>
-                <td>Referees per game</td>
-                <td class="num placeholder" data-key="refs_per_game">—</td>
-              </tr>
-              <tr>
-                <td>Referee rate (per game)</td>
-                <td class="num placeholder" data-key="ref_rate">—</td>
-              </tr>
-              <tr>
-                <td>Scorekeeper rate (per hour)</td>
-                <td class="num placeholder" data-key="scorekeeper_rate">—</td>
-              </tr>
-              <tr>
-                <td>Admission (cash)</td>
-                <td class="num placeholder" data-key="admission_cash">—</td>
-              </tr>
-              <tr>
-                <td>Admission (card, per ticket)</td>
-                <td class="num placeholder" data-key="admission_card">—</td>
-              </tr>
-              <tr>
-                <td>Card fee (once per card ticket order)</td>
-                <td class="num placeholder" data-key="card_fee_order">—</td>
-              </tr>
-              <tr>
-                <td>Card fee (concession orders under $5)</td>
-                <td class="num placeholder" data-key="conc_card_fee">—</td>
-              </tr>
-              <tr>
-                <td>Square rate per card sale</td>
-                <td class="num placeholder" data-key="card_rate">—</td>
-              </tr>
-              <tr>
-                <td>Square fixed fee per card sale</td>
-                <td class="num placeholder" data-key="card_fee_txn">—</td>
-              </tr>
-              <tr>
-                <td>Insurance cost</td>
-                <td class="num placeholder" data-key="insurance_cost">—</td>
-              </tr>
-              <tr>
-                <td>Insurance refund expected</td>
-                <td class="num placeholder" data-key="insurance_refund_expected">—</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </section>
-    <!-- ===== END: Setup / Assumptions ===== -->
-
     <!-- ===== START: Concessions ===== -->
     <section id="concessions" class="section">
       <h2>Concessions</h2>
@@ -394,10 +351,42 @@
     </section>
     <!-- ===== END: Concessions ===== -->
 
+    <!-- ===== START: Funding ===== -->
+    <section id="funding" class="section">
+      <h2>Funding</h2>
+      <div class="split">
+        <div class="card">
+          <h3>Team fees</h3>
+          <table class="fund-table">
+            <tbody>
+              <tr><td>Expected from all teams</td><td class="num placeholder" data-key="team_fee_budget">—</td></tr>
+              <tr><td>Paid by sponsors</td><td class="num placeholder" data-key="pay_sponsors_fees">—</td></tr>
+              <tr><td>Paid by coaches / players</td><td class="num placeholder" data-key="pay_players_fees">—</td></tr>
+              <tr class="total-row"><th scope="row">Still to collect</th><td class="num placeholder" data-key="team_fees_to_collect">—</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="card">
+          <h3>Other money in</h3>
+          <table class="fund-table">
+            <tbody>
+              <tr><td>Additional sponsorship</td><td class="num placeholder" data-key="pay_add_sponsor">—</td></tr>
+              <tr><td>Other funding</td><td class="num placeholder" data-key="pay_other_funding">—</td></tr>
+              <tr><td>Insurance refund received</td><td class="num placeholder" data-key="pay_insurance_refund">—</td></tr>
+              <tr><td>Insurance refund still expected</td><td class="num placeholder" data-key="pay_expected_refund">—</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <p class="section-note">Record payments on <a href="inputs.html#funding">Enter Data → Funding</a>.</p>
+    </section>
+    <!-- ===== END: Funding ===== -->
+
     <!-- ===== START: Schedule Summary ===== -->
     <section id="schedule" class="section">
       <h2>Schedule</h2>
-      <div class="card">
+      <details class="card sched-details">
+        <summary>Full game schedule <span class="muted">(filter by week or team)</span></summary>
         <p class="note">Live from the Schedule tab in the Google Sheet. Tue &amp; Thu: Alachua Sports Complex (Courts 1–2). Wed &amp; Fri: Abundant Grace Church (Main Court). No games Thanksgiving week.</p>
         <div class="sched-filters">
           <label>Week
@@ -425,41 +414,9 @@
             </tbody>
           </table>
         </div>
-      </div>
+      </details>
     </section>
     <!-- ===== END: Schedule Summary ===== -->
-
-    <!-- ===== START: Funding ===== -->
-    <section id="funding" class="section">
-      <h2>Funding</h2>
-      <div class="kpi-grid">
-        <article class="kpi">
-          <p class="kpi-label">Sponsor payments</p>
-          <p class="kpi-value num placeholder" data-key="pay_sponsors_fees">—</p>
-        </article>
-        <article class="kpi">
-          <p class="kpi-label">Coach / player payments</p>
-          <p class="kpi-value num placeholder" data-key="pay_players_fees">—</p>
-        </article>
-        <article class="kpi">
-          <p class="kpi-label">Additional sponsorship</p>
-          <p class="kpi-value num placeholder" data-key="pay_add_sponsor">—</p>
-        </article>
-        <article class="kpi">
-          <p class="kpi-label">Other funding</p>
-          <p class="kpi-value num placeholder" data-key="pay_other_funding">—</p>
-        </article>
-        <article class="kpi">
-          <p class="kpi-label">Insurance refund received</p>
-          <p class="kpi-value num placeholder" data-key="pay_insurance_refund">—</p>
-        </article>
-        <article class="kpi">
-          <p class="kpi-label">Expected insurance refund</p>
-          <p class="kpi-value num placeholder" data-key="pay_expected_refund">—</p>
-        </article>
-      </div>
-    </section>
-    <!-- ===== END: Funding ===== -->
 
     <!-- ===== START: Sponsors ===== -->
     <section id="sponsors" class="section">
@@ -548,10 +505,12 @@
   </main>
 
   <script src="config.js"></script>
+  <script src="format.js"></script>
   <script src="app.js"></script>
   <script src="sponsors.js"></script>
   <script src="concessions.js"></script>
   <script src="daytable.js"></script>
   <script src="gamedays.js"></script>
+  <script src="briefing.js"></script>
 </body>
 </html>

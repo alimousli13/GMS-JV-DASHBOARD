@@ -12,6 +12,7 @@
   var API = typeof API_URL === "string" ? API_URL.trim() : "";
   var PASS_KEY = "kl_edit_passcode";
   var DAY_KEY = "kl_last_day";
+  var OPEN_KEY = "kl_alldays_open";
 
   var state = {
     data: null,
@@ -25,6 +26,7 @@
   };
 
   var $ = function (id) { return document.getElementById(id); };
+  function plural(n, word) { return n + " " + word + (n === 1 ? "" : "s"); }
 
   /* ---------- storage (wrapped: can be blocked) ---------- */
   function sGet(k) { try { return window.localStorage.getItem(k); } catch (e) { return null; } }
@@ -95,6 +97,7 @@
   // Sheet display values usually arrive formatted ("$75.00"); format bare numbers the same way.
   function money(v) {
     var s = String(v === null || v === undefined ? "" : v).trim();
+    if (window.KLFormat && (window.KLFormat.isMoneyText(s) || /^-?\d+(\.\d+)?$/.test(s))) return window.KLFormat.money(s);
     if (!/^-?\d+(\.\d+)?$/.test(s)) return s;
     return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(Number(s));
   }
@@ -119,11 +122,20 @@
     return null;
   }
 
+  // Open on tonight's game if there is one (game-night entry), else where the user left off,
+  // else the most recent night played.
+  function todayIso() {
+    var d = new Date(), p = function (n) { return (n < 10 ? "0" : "") + n; };
+    return d.getFullYear() + "-" + p(d.getMonth() + 1) + "-" + p(d.getDate());
+  }
   function pickStartDay(days) {
+    var t = todayIso(), i;
+    for (i = 0; i < days.length; i++) if (days[i].iso === t) return days[i].n;
     var saved = Number(sGet(DAY_KEY));
     if (saved && days.some(function (d) { return d.n === saved; })) return saved;
-    for (var i = 0; i < days.length; i++) if (Number(days[i].values.completed) !== 1) return days[i].n;
-    return days.length ? days[0].n : null;
+    var lastPlayed = null;
+    for (i = 0; i < days.length; i++) if (days[i].iso && days[i].iso < t) lastPlayed = days[i].n;
+    return lastPlayed || (days.length ? days[0].n : null);
   }
 
   function current(key) { return Object.prototype.hasOwnProperty.call(state.edits, key) ? state.edits[key] : state.original[key]; }
@@ -275,24 +287,21 @@
       });
     }
 
+    var glance = $("in-alldays-glance");
+    if (glance && window.KLDayTable) {
+      var g = window.KLDayTable.summary(state.data);
+      glance.textContent = g.played + " played · net so far " + window.KLDayTable.money(g.net) + " · " + g.left + " left";
+    }
+
     var d = findDay(state.dayN);
     var sum = $("in-day-summary");
-    sum.innerHTML = "";
+    sum.textContent = "";
     if (!d) return;
-    [["Date", d.date || "Set first Tuesday"], ["Games", d.games], ["Day revenue", money(d.revenue)],
-     ["Day cost", money(d.cost)], ["Day net income", money(d.net)]].forEach(function (pair, i) {
-      var k = el("article", "kpi");
-      k.appendChild(el("p", "kpi-label", pair[0]));
-      var v = el("p", "kpi-value num", pair[1] === "" ? "—" : pair[1]);
-      if (i === 4) {
-        var n = Number(String(pair[1]).replace(/[$,\s()]/g, ""));
-        if (/\(|^-/.test(String(pair[1]))) v.classList.add("negative");
-        else if (n > 0) v.classList.add("positive");
-        if (!isFinite(n)) v.classList.add("warn-badge");
-      }
-      k.appendChild(v);
-      sum.appendChild(k);
-    });
+    // One line instead of five cards: games, revenue, costs, net (as of the last save).
+    var net = window.KLFormat ? window.KLFormat.num(d.net) : NaN;
+    sum.appendChild(el("span", "", plural(Number(d.games) || 0, "game") + " · Revenue " + money(d.revenue) + " · Costs " + money(d.cost) + " · Net "));
+    sum.appendChild(el("strong", "num " + (window.KLFormat ? window.KLFormat.tone(net) : ""), isFinite(net) ? money(d.net) : (d.net || "—")));
+    sum.appendChild(el("span", "in-day-line-note", " (as of the last save)"));
 
     var fields = state.data.dailyFields, metas = [], conc = concMetasForDay(d.n), placed = false;
     var noConc = !dayHasConc(d.n);
@@ -306,7 +315,7 @@
     renderGroups($("in-day-fields"), metas);
     if (noConc) {
       var host = $("in-day-fields");
-      host.insertBefore(el("p", "note in-noconc", "Sports complex only: concessions are sold at the church, so there are no snack numbers to enter for this day."), host.firstChild);
+      host.insertBefore(el("p", "note in-noconc", "Sports complex night: concessions are only sold at the church, so there are no snack numbers to enter."), host.firstChild);
     }
 
     $("in-day-prev").disabled = days[0].n === d.n;
@@ -427,9 +436,9 @@
     if (box.hidden) return;
     var last = sq.last, t = $("in-square-text");
     t.className = "in-square-text";
-    if (!last) t.textContent = "Square is connected. Not synced yet.";
-    else if (last.ok === false) { t.textContent = "Last Square sync failed (" + last.at + "): " + last.error; t.className += " is-error"; }
-    else t.textContent = "Square: last synced " + last.at + " · " + last.orders + " sale" + (last.orders === 1 ? "" : "s") + " across " + (last.days || []).length + " game day" + ((last.days || []).length === 1 ? "" : "s") + ".";
+    if (!last) t.textContent = "Square is connected but hasn't synced yet.";
+    else if (last.ok === false) { t.textContent = "Square sync failed (" + last.at + "): " + last.error; t.className += " is-error"; }
+    else t.textContent = "Square synced " + last.at + ". Nights with Square sales refresh nightly; typing over them gets replaced at the next sync.";
   }
 
   function squareSync() {
@@ -445,7 +454,7 @@
         status((data.syncSummary && data.syncSummary.text) || "Synced from Square.", "ok");
       })
       .catch(function (e) { status("Square sync failed: " + e.message, "error"); })
-      .then(function () { btn.disabled = false; btn.textContent = "Sync from Square now"; });
+      .then(function () { btn.disabled = false; btn.textContent = "Sync now"; });
   }
 
   function renderAll() {
@@ -467,6 +476,28 @@
     $("in-save").disabled = n === 0 || bad > 0;
     $("in-discard").disabled = n === 0;
     $("in-savebar").classList.toggle("is-dirty", n > 0);
+  }
+
+  /* ---------- tabs + deep links (inputs.html#conc, #prices, #rentals, #funding, #day-5) ---------- */
+  function selectTab(tab) {
+    Array.prototype.forEach.call(document.querySelectorAll(".in-tab"), function (b) {
+      var on = b.getAttribute("data-tab") === tab;
+      b.classList.toggle("is-active", on);
+      b.setAttribute("aria-selected", on ? "true" : "false");
+      b.tabIndex = on ? 0 : -1;
+      if (on && b.scrollIntoView) b.scrollIntoView({ block: "nearest", inline: "nearest" });
+    });
+    Array.prototype.forEach.call(document.querySelectorAll(".in-panel"), function (p) {
+      p.hidden = p.getAttribute("data-panel") !== tab;
+    });
+  }
+
+  function applyHash() {
+    var h = String(window.location.hash || "").replace(/^#/, "");
+    if (!h) return;
+    var m = /^day-(\d+)$/.exec(h);
+    if (m && state.data && findDay(Number(m[1]))) { selectTab("days"); goDay(Number(m[1])); return; }
+    if (document.querySelector('.in-tab[data-tab="' + h + '"]')) selectTab(h);
   }
 
   /* ---------- actions ---------- */
@@ -560,23 +591,35 @@
     var sqBtn = $("in-square-sync");
     if (sqBtn) sqBtn.addEventListener("click", squareSync);
     Array.prototype.forEach.call(document.querySelectorAll("[data-goto]"), function (b) {
-      b.addEventListener("click", function () {
-        var tab = document.querySelector('.in-tab[data-tab="' + b.getAttribute("data-goto") + '"]');
-        if (tab) { tab.click(); window.scrollTo(0, 0); }
+      b.addEventListener("click", function () { selectTab(b.getAttribute("data-goto")); window.scrollTo(0, 0); });
+    });
+    var tabs = Array.prototype.slice.call(document.querySelectorAll(".in-tab"));
+    tabs.forEach(function (btn, i) {
+      btn.addEventListener("click", function () { selectTab(btn.getAttribute("data-tab")); });
+      // Arrow keys move between tabs (standard tablist behavior).
+      btn.addEventListener("keydown", function (e) {
+        var j = e.key === "ArrowRight" ? i + 1 : e.key === "ArrowLeft" ? i - 1 : e.key === "Home" ? 0 : e.key === "End" ? tabs.length - 1 : null;
+        if (j === null) return;
+        e.preventDefault();
+        var next = tabs[(j + tabs.length) % tabs.length];
+        selectTab(next.getAttribute("data-tab"));
+        next.focus();
       });
     });
-    Array.prototype.forEach.call(document.querySelectorAll(".in-tab"), function (btn) {
-      btn.addEventListener("click", function () {
-        var tab = btn.getAttribute("data-tab");
-        Array.prototype.forEach.call(document.querySelectorAll(".in-tab"), function (b) {
-          b.classList.toggle("is-active", b === btn);
-          b.setAttribute("aria-selected", b === btn ? "true" : "false");
-        });
-        Array.prototype.forEach.call(document.querySelectorAll(".in-panel"), function (p) {
-          p.hidden = p.getAttribute("data-panel") !== tab;
-        });
-      });
+    // [ and ] step through game nights when you're not typing in a box.
+    document.addEventListener("keydown", function (e) {
+      if (!state.data || e.metaKey || e.ctrlKey || e.altKey) return;
+      if (/^(INPUT|SELECT|TEXTAREA)$/.test((e.target && e.target.tagName) || "")) return;
+      if ($("panel-days").hidden) return;
+      if (e.key === "[") { e.preventDefault(); shiftDay(-1); }
+      if (e.key === "]") { e.preventDefault(); shiftDay(1); }
     });
+    var box = $("in-alldays-box");
+    if (box) {
+      if (sGet(OPEN_KEY) === "1") box.open = true;
+      box.addEventListener("toggle", function () { sSet(OPEN_KEY, box.open ? "1" : "0"); });
+    }
+    window.addEventListener("hashchange", applyHash);
     $("in-day-select").addEventListener("change", function (e) { goDay(Number(e.target.value)); });
     $("in-day-prev").addEventListener("click", function () { shiftDay(-1); });
     $("in-day-next").addEventListener("click", function () { shiftDay(1); });
@@ -608,7 +651,7 @@
     var saved = sGet(PASS_KEY);
     if (saved) { state.passcode = saved; setUnlocked(true); }
     api(null)
-      .then(function (data) { ingest(data); renderAll(); })
+      .then(function (data) { ingest(data); renderAll(); applyHash(); })
       .catch(function (e) {
         $("in-loading").textContent = "Couldn't load the sheet: " + e.message;
       });

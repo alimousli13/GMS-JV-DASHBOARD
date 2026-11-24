@@ -1,0 +1,80 @@
+/* "Where the season stands" (briefing.js) */
+.brief {
+  display: grid;
+  grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr);
+  gap: var(--space-xl);
+  align-items: start;
+}
+
+.brief-lede {
+  margin: 0 0 var(--space-sm);
+  font-size: 1.45rem;
+  line-height: 1.3;
+  font-weight: 600;
+  color: var(--color-text);
+  max-width: 34ch;
+  text-wrap: balance;
+}
+.brief-lede strong { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.brief-lede.placeholder { font-size: 1.1rem; font-weight: 400; }
+
+.brief-sub {
+  margin: 0 0 var(--space-lg);
+  color: var(--color-muted);
+  max-width: 62ch;
+}
+
+/* Bridge (waterfall): cash so far → fees owed → season floor */
+.brief-chart { width: 100%; max-width: 640px; }
+.brief-bridge { display: block; overflow: visible; }
+.bb-zero { stroke: var(--color-border); stroke-width: 1.5; }
+.bb-link { stroke: var(--color-muted); stroke-width: 1; stroke-dasharray: 3 3; }
+.bb-bar.bb-start.is-neg, .bb-bar.bb-step.is-neg { fill: #e3a29a; }
+.bb-bar.bb-start.is-pos, .bb-bar.bb-step.is-pos { fill: #8fc7a6; }
+.bb-bar.bb-total { fill: var(--color-navy); }
+.bb-value { font: 700 15px var(--font); text-anchor: middle; font-variant-numeric: tabular-nums; fill: var(--color-text); }
+.bb-value.is-neg { fill: var(--color-negative); }
+.bb-value.is-pos { fill: var(--color-positive); }
+.bb-label { font: 500 13px var(--font); text-anchor: middle; fill: var(--color-muted); }
+.bb-label.is-total { font-weight: 700; fill: var(--color-navy); }
+
+/* Side panel: one card, three parts separated by rules (not three cards) */
+.brief-side { padding: 0; }
+.brief-side > div { padding: var(--space-md) var(--space-lg); }
+.brief-side > div + div { border-top: 1px solid var(--color-border); }
+.brief-side h3 { margin: 0 0 var(--space-xs); font-size: 0.95rem; color: var(--color-navy); }
+.brief-when { margin: 0 0 var(--space-xs); }
+.brief-night p { margin-top: 0; margin-bottom: 0; }
+.brief-night .brief-when { margin-bottom: var(--space-xs); }
+.brief-facts { display: grid; grid-template-columns: repeat(4, auto); gap: var(--space-xs) var(--space-md); margin: var(--space-xs) 0 0; justify-content: start; }
+.brief-facts dt { font-size: 0.78rem; color: var(--color-muted); }
+.brief-facts dd { margin: 0; font-weight: 700; text-align: left; }
+.brief-flag { margin: var(--space-xs) 0 0; font-size: 0.88rem; font-weight: 600; color: var(--color-warning-text); }
+
+.brief-attn ul { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-sm); }
+.brief-attn li { font-size: 0.92rem; line-height: 1.4; }
+.brief-attn li a { font-weight: 700; white-space: nowrap; }
+.brief-attn li.is-urgent span { color: var(--color-negative); font-weight: 600; }
+
+@media (max-width: 900px) {
+  .brief { grid-template-columns: 1fr; gap: var(--space-lg); }
+  .brief-lede { font-size: 1.25rem; max-width: none; }
+}
+@media (max-width: 560px) {
+  .brief-facts { grid-template-columns: repeat(2, auto); }
+}
+
+/* Folded sections (P&L assumptions, schedule) */
+.pnl-assumptions, .sched-details { margin-top: var(--space-md); }
+.pnl-assumptions > summary, .sched-details > summary {
+  cursor: pointer;
+  font-weight: 700;
+  color: var(--color-navy);
+  padding: var(--space-xs) 0;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.pnl-assumptions[open] > summary, .sched-details[open] > summary { margin-bottom: var(--space-sm); }
+.fund-table td, .fund-table th { border-bottom: 1px solid var(--color-border); }

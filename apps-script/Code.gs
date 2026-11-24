@@ -30,7 +30,7 @@ var FIELDS = [
   { key: 'setup_fee_per_team',      sheet: 'Setup',   cell: 'B6',  type: 'money',   panel: 'prices',  group: 'League & team fees',   label: 'Fee per team' },
   { key: 'setup_sponsor_portion',   sheet: 'Setup',   cell: 'B7',  type: 'money',   panel: 'prices',  group: 'League & team fees',   label: 'Sponsor portion per team' },
 
-  { key: 'setup_admission_cash',    sheet: 'Setup',   cell: 'B14', type: 'money',   panel: 'prices',  group: 'Admission prices',     label: 'Admission price: cash' },
+  { key: 'setup_admission_cash',    sheet: 'Setup',   cell: 'B14', type: 'money',   panel: 'prices',  group: 'Admission prices',     label: 'Ticket price: cash' },
   { key: 'setup_admission_card',    sheet: 'Setup',   cell: 'B15', type: 'money',   panel: 'prices',  group: 'Admission prices',     label: 'Ticket price: card (per ticket, before fee)' },
   { key: 'setup_card_fee_order',    sheet: 'Setup',   cell: 'B16', type: 'money',   panel: 'prices',  group: 'Card fees we charge',  label: 'Card fee per ticket order' },
   { key: 'setup_conc_card_fee',     sheet: 'Setup',   cell: 'B17', type: 'money',   panel: 'prices',  group: 'Card fees we charge',  label: 'Card fee per concession order under $5' },
@@ -70,7 +70,7 @@ var RENTAL_COLS = [
 var DAY_FIRST_COL = 3, DAY_COUNT = 20, DAILY_LAST_ROW = 73;
 var DAILY_FIELDS = [
   { field: 'completed',     row: 10, type: 'bool',   group: 'Status',            label: 'Day completed' },
-  { field: 'cash_adm',      row: 16, type: 'int',    group: 'Admissions',        label: 'Cash admissions sold' },
+  { field: 'cash_adm',      row: 16, type: 'int',    group: 'Admissions',        label: 'Cash tickets sold' },
   { field: 'card_adm',      row: 19, type: 'int',    group: 'Admissions',        label: 'Card tickets sold',
     hint: 'Every ticket paid by card, at the door or online.' },
   { field: 'card_orders',   row: 24, type: 'int',    group: 'Admissions',        label: 'Card ticket orders',

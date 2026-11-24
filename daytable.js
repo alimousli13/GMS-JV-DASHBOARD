@@ -20,10 +20,11 @@
     return isFinite(n) ? (neg ? -n : n) : NaN;
   }
   function money(n) {
+    if (window.KLFormat) return window.KLFormat.money(n, { dashZero: true });
     if (!isFinite(n)) return "—";
     if (n === 0) return "–";
     var s = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(Math.abs(n));
-    return n < 0 ? "(" + s + ")" : s;
+    return n < 0 ? "\u2212" + s : s;
   }
   function el(tag, cls, text) {
     var e = document.createElement(tag);
@@ -49,7 +50,7 @@
     opts = opts || {};
     container.textContent = "";
     var days = (payload && payload.days) || [];
-    if (!days.length) { container.appendChild(el("p", "muted", "No game days scheduled yet.")); return; }
+    if (!days.length) { container.appendChild(el("p", "muted", "No game nights are scheduled yet. Add the schedule in the Google Sheet (Kenny League → Update schedule).")); return; }
 
     var synced = {};
     var sq = payload.square && payload.square.last;
@@ -64,11 +65,11 @@
       else left++;
     });
     var chips = el("div", "dt-chips");
-    [["Played so far", played.days + " day" + (played.days === 1 ? "" : "s")],
+    [["Played so far", played.days + " night" + (played.days === 1 ? "" : "s")],
      ["Revenue so far", money(played.rev)],
      ["Costs so far", money(played.cost)],
      ["Net so far", money(played.net), played.net < 0 ? "negative" : played.net > 0 ? "positive" : ""],
-     ["Game days left", String(left)]].forEach(function (c) {
+     ["Nights left", String(left)]].forEach(function (c) {
       var chip = el("div", "dt-chip");
       chip.appendChild(el("span", "dt-chip-label", c[0]));
       chip.appendChild(el("span", "dt-chip-value num " + (c[2] || ""), c[1]));
@@ -79,8 +80,11 @@
     var wrap = el("div", "table-wrap");
     var table = el("table", "dt-table" + (opts.onPick ? " is-clickable" : ""));
     var thead = el("thead"), hr = el("tr");
-    [["Game day", ""], ["Games", "num"], ["Tickets", "num"], ["Admissions", "num"], ["Concessions", "num"],
-     ["Revenue", "num"], ["Costs", "num"], ["Net", "num"], ["Status", ""]].forEach(function (h) { hr.appendChild(el("th", h[1], h[0])); });
+    // dt-opt columns drop off on phones so Day · Tickets · Net · Status stay readable without sideways scrolling.
+    [["Game night", ""], ["Games", "num dt-opt"], ["Tickets", "num"], ["Admissions", "num dt-opt"], ["Concessions", "num dt-opt"],
+     ["Revenue", "num dt-opt"], ["Costs", "num dt-opt"], ["Net", "num"], ["Status", ""]].forEach(function (h) {
+      var th = el("th", h[1], h[0]); th.scope = "col"; hr.appendChild(th);
+    });
     thead.appendChild(hr); table.appendChild(thead);
 
     var tb = el("tbody"), tot = { games: 0, cash: 0, card: 0, adm: 0, conc: 0, rev: 0, cost: 0, net: 0 }, week = null;
@@ -104,26 +108,27 @@
       first.appendChild(el("span", "dt-day-name", (opts.edited && opts.edited(d.n) ? "• " : "") + (d.date || parts[0])));
       first.appendChild(el("span", "dt-day-sub", [parts[0], parts[1]].filter(Boolean).join(" · ")));
       tr.appendChild(first);
-      tr.appendChild(el("td", "num", d.games || "–"));
+      tr.appendChild(el("td", "num dt-opt", d.games || "–"));
       var tk = el("td", "num", cash + card ? String(cash + card) : "–");
       if (cash + card) tk.title = cash + " cash · " + card + " card";
       if (cash + card) tk.appendChild(el("span", "dt-sub", cash + " cash · " + card + " card"));
       tr.appendChild(tk);
-      tr.appendChild(el("td", "num", money(adm)));
+      tr.appendChild(el("td", "num dt-opt", money(adm)));
       if (d.hasConcessions === false && !conc) {
-        var nc = el("td", "num dt-na", "Not sold");
+        var nc = el("td", "num dt-na dt-opt", "Not sold");
         nc.title = "Concessions are only sold at the church";
         tr.appendChild(nc);
       } else {
-        var cc = el("td", "num" + (d.hasConcessions === false ? " dt-flag" : ""), money(conc));
+        var cc = el("td", "num dt-opt" + (d.hasConcessions === false ? " dt-flag" : ""), money(conc));
         if (d.hasConcessions === false) cc.title = "Concession sales on a sports-complex-only day: check the date";
         tr.appendChild(cc);
       }
-      tr.appendChild(el("td", "num", money(rev)));
-      tr.appendChild(el("td", "num", money(cost)));
+      tr.appendChild(el("td", "num dt-opt", money(rev)));
+      tr.appendChild(el("td", "num dt-opt", money(cost)));
       tr.appendChild(el("td", "num " + (net < 0 ? "negative" : net > 0 ? "positive" : ""), money(net)));
       var sc = el("td"); sc.appendChild(el("span", "dt-status " + st.cls, st.text)); tr.appendChild(sc);
 
+      if (opts.selected === d.n) tr.setAttribute("aria-current", "true");
       if (opts.onPick) {
         tr.tabIndex = 0;
         tr.setAttribute("role", "button");
@@ -136,12 +141,12 @@
     table.appendChild(tb);
 
     var tf = el("tfoot"), fr = el("tr", "total-row");
-    fr.appendChild(el("td", "", "Season (all days)"));
-    fr.appendChild(el("td", "num", String(tot.games)));
+    fr.appendChild(el("td", "", "Season (all nights)"));
+    fr.appendChild(el("td", "num dt-opt", String(tot.games)));
     var ft = el("td", "num", String(tot.cash + tot.card));
     ft.appendChild(el("span", "dt-sub", tot.cash + " cash · " + tot.card + " card"));
     fr.appendChild(ft);
-    [tot.adm, tot.conc, tot.rev, tot.cost].forEach(function (v) { fr.appendChild(el("td", "num", money(v))); });
+    [tot.adm, tot.conc, tot.rev, tot.cost].forEach(function (v) { fr.appendChild(el("td", "num dt-opt", money(v))); });
     fr.appendChild(el("td", "num " + (tot.net < 0 ? "negative" : tot.net > 0 ? "positive" : ""), money(tot.net)));
     fr.appendChild(el("td", ""));
     tf.appendChild(fr); table.appendChild(tf);
@@ -151,5 +156,15 @@
     container.appendChild(el("p", "dt-note", "Season totals include rent and staff already booked for upcoming days. The \u201cso far\u201d boxes count only days played."));
   }
 
-  window.KLDayTable = { render: render };
+  // Played-so-far numbers, for a one-line summary when the table is folded away (Enter Data).
+  function summary(payload) {
+    var days = (payload && payload.days) || [], t = today(), s = { played: 0, net: 0, left: 0 };
+    days.forEach(function (d) {
+      var past = Number(d.values && d.values.completed) === 1 || (d.iso && d.iso <= t);
+      if (past) { s.played++; s.net += num(d.net) || 0; } else s.left++;
+    });
+    return s;
+  }
+
+  window.KLDayTable = { render: render, summary: summary, money: money };
 })();

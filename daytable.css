@@ -1,26 +1,45 @@
-/* All game days table (daytable.js) */
-.dt-chips { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.75rem; }
-.dt-chip { display: flex; flex-direction: column; padding: 0.45rem 0.75rem; border: 1px solid var(--color-border, #d9dee6); border-radius: 8px; background: var(--color-surface, #fff); min-width: 7.5rem; }
-.dt-chip-label { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--color-muted, #5b6573); }
-.dt-chip-value { font-weight: 700; font-size: 1.05rem; }
+/* All game nights table (daytable.js). Colors come from the tokens in style.css. */
+.dt-chips { display: flex; flex-wrap: wrap; gap: var(--space-sm); margin-bottom: var(--space-md); }
+.dt-chip { display: flex; flex-direction: column; padding: 0.45rem 0.75rem; border: 1px solid var(--color-border); border-radius: 8px; background: var(--color-surface); min-width: 7.5rem; }
+.dt-chip-label { font-size: 0.78rem; color: var(--color-muted); }
+.dt-chip-value { font-weight: 700; font-size: 1.05rem; text-align: left; }
 .dt-table td, .dt-table th { white-space: nowrap; }
-.dt-table .dt-week td { background: var(--color-bg, #eef1f5); font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--color-muted, #5b6573); padding-top: 0.35rem; padding-bottom: 0.35rem; }
+.dt-table .dt-week td { background: var(--color-bg); font-size: 0.78rem; font-weight: 700; color: var(--color-muted); padding-top: 0.35rem; padding-bottom: 0.35rem; }
 .dt-day-name { display: block; font-weight: 600; }
-.dt-day-sub, .dt-sub { display: block; font-size: 0.75rem; color: var(--color-muted, #5b6573); font-weight: 400; }
-.dt-row.is-upcoming td { color: var(--color-muted, #5b6573); }
+.dt-day-sub, .dt-sub { display: block; font-size: 0.78rem; color: var(--color-muted); font-weight: 400; }
+.dt-row.is-upcoming td { color: var(--color-muted); }
 .dt-table.is-clickable .dt-row { cursor: pointer; }
-.dt-table.is-clickable .dt-row:hover td, .dt-table.is-clickable .dt-row:focus td { background: #f4f7fb; outline: none; }
-.dt-row.is-selected td { background: #e8eef7; }
-.dt-row.is-selected td:first-child { box-shadow: inset 3px 0 0 var(--color-navy, #1b365d); }
-.dt-status { display: inline-block; border-radius: 999px; padding: 0.1rem 0.55rem; font-size: 0.75rem; font-weight: 600; border: 1px solid transparent; }
-.dt-done { background: #e6f4ec; color: var(--color-positive, #1a7f4b); border-color: #b7e0c8; }
-.dt-square { background: #e8eef7; color: var(--color-navy, #1b365d); border-color: #c5d3e8; }
-.dt-entered { background: #f1f3f6; color: #3b4452; border-color: #dde2e8; }
-.dt-today { background: #fff4d6; color: #7a5600; border-color: #f0d68a; }
-.dt-missing { background: var(--color-warning-bg, #fff4e5); color: var(--color-warning-text, #8a5300); border-color: var(--color-warning-border, #f3c98b); }
-.dt-upcoming { background: transparent; color: var(--color-muted, #5b6573); border-color: #dde2e8; }
-.dt-note { font-size: 0.8rem; color: var(--color-muted, #5b6573); margin: 0.5rem 0 0; }
-.in-alldays > summary { cursor: pointer; font-weight: 700; padding: 0.25rem 0; }
-.in-alldays[open] > summary { margin-bottom: 0.75rem; }
-.dt-na { color: var(--color-muted, #5b6573); font-size: 0.8rem; }
-.dt-flag { color: var(--color-warning-text, #8a5300); font-weight: 700; }
+.dt-table.is-clickable .dt-row:hover td { background: var(--color-row-hover); }
+.dt-table.is-clickable .dt-row:focus-visible { outline: 3px solid var(--color-focus); outline-offset: -3px; }
+.dt-row.is-selected td { background: var(--color-selected); border-bottom-color: var(--color-selected-border); }
+.dt-row.is-selected .dt-day-name { color: var(--color-navy); }
+.dt-status { display: inline-block; border-radius: 999px; padding: 0.1rem 0.55rem; font-size: 0.78rem; font-weight: 600; border: 1px solid transparent; }
+.dt-done { background: var(--color-positive-bg); color: var(--color-positive); border-color: var(--color-positive-border); }
+.dt-square { background: var(--color-info-bg); color: var(--color-navy); border-color: var(--color-info-border); }
+.dt-entered { background: var(--color-neutral-bg); color: var(--color-text); border-color: var(--color-neutral-border); }
+.dt-today { background: var(--color-today-bg); color: var(--color-today-text); border-color: var(--color-today-border); }
+.dt-missing { background: var(--color-warning-bg); color: var(--color-warning-text); border-color: var(--color-warning-border); }
+.dt-upcoming { background: transparent; color: var(--color-muted); border-color: var(--color-neutral-border); }
+.dt-na { color: var(--color-muted); font-size: 0.82rem; }
+.dt-flag { color: var(--color-warning-text); font-weight: 700; }
+.dt-note { font-size: 0.82rem; color: var(--color-muted); margin: var(--space-sm) 0 0; }
+
+/* Phones: keep Night · Tickets · Net · Status; the rest is one tap away (Enter Data) */
+@media (max-width: 640px) {
+  .dt-table .dt-opt { display: none; }
+  .dt-table td, .dt-table th { padding-left: 0.45rem; padding-right: 0.45rem; }
+  .dt-chip { min-width: 0; flex: 1 1 40%; }
+}
+
+/* Enter Data: folded "All game nights" header */
+.in-alldays > summary {
+  cursor: pointer;
+  font-weight: 700;
+  min-height: 44px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 0.75rem;
+}
+.in-alldays-glance { font-weight: 500; font-size: 0.9rem; color: var(--color-muted); font-variant-numeric: tabular-nums; }
+.in-alldays[open] > summary { margin-bottom: var(--space-sm); }

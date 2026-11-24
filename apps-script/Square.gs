@@ -99,6 +99,7 @@ function squareSync_() {
     var summary = {
       ok: true,
       at: Utilities.formatDate(new Date(), tz, 'MMM d, h:mm a'),
+      atIso: new Date().toISOString(),
       orders: agg.counted,
       days: touched.map(function (d) { var a = agg.byDay[d.idx]; return { n: d.idx + 1, label: d.label, orders: a.orders, sales: Math.round(a.sales * 100) / 100 }; }),
       skipped: { orders: agg.skipped, amount: Math.round(agg.skippedAmt * 100) / 100 },
@@ -114,7 +115,7 @@ function squareSync_() {
     getLogSheet_(ss).appendRow([new Date(), 'Square sync', 'Square sync', '', summary.text]);
     return summary;
   } catch (e) {
-    props.setProperty(SQ.prop, JSON.stringify({ ok: false, at: Utilities.formatDate(new Date(), tz, 'MMM d, h:mm a'), error: String(e.message || e) }));
+    props.setProperty(SQ.prop, JSON.stringify({ ok: false, at: Utilities.formatDate(new Date(), tz, 'MMM d, h:mm a'), atIso: new Date().toISOString(), error: String(e.message || e) }));
     throw e;
   } finally {
     lock.releaseLock();

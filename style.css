@@ -4,12 +4,12 @@
   --color-navy: #1b365d;
   --color-navy-hover: #152a49;
   --color-text: #1c2430;
-  --color-muted: #6b7789;
+  --color-muted: #566171;          /* 5.3:1 on --color-bg, 6:1 on white */
   --color-border: #d7dee8;
   --color-positive: #1a7f4b;
   --color-negative: #c0392b;
   --color-warning-bg: #fff4cc;
-  --color-warning-text: #8a6d00;
+  --color-warning-text: #6e5600;    /* 6:1 on --color-warning-bg */
   --color-warning-border: #e6c84a;
   --color-banner-bg: #fdecea;
   --color-banner-text: #8c2f26;
@@ -23,7 +23,20 @@
   --shadow: 0 1px 3px rgba(27, 54, 93, 0.08);
   --nav-height: 3.25rem;
   --max-width: 1120px;
-  --font: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  --font: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --color-focus: #2f6fd6;
+  --color-row-hover: #f3f6fa;
+  --color-selected: #e4ecf7;
+  --color-selected-border: #9db4d6;
+  --color-positive-bg: #e6f4ec;
+  --color-positive-border: #b7e0c8;
+  --color-info-bg: #e8eef7;
+  --color-info-border: #c5d3e8;
+  --color-neutral-bg: #f1f3f6;
+  --color-neutral-border: #dde2e8;
+  --color-today-bg: #fff4d6;
+  --color-today-text: #6e4d00;
+  --color-today-border: #f0d68a;
 }
 
 *,
@@ -46,6 +59,25 @@ body {
 
 a {
   color: var(--color-navy);
+  text-underline-offset: 0.18em;
+}
+
+::selection { background: #c9d9f2; color: var(--color-text); }
+input, select, textarea { caret-color: var(--color-navy); accent-color: var(--color-navy); }
+
+/* One visible focus ring for every control (keyboard only). */
+:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+.site-nav :focus-visible { outline-color: #fff; }
+
+.section-note {
+  margin: calc(var(--space-sm) * -1) 0 var(--space-md);
+  color: var(--color-muted);
+  font-size: 0.92rem;
+  max-width: 75ch;
 }
 
 .skip-link {
@@ -89,9 +121,10 @@ a {
 }
 
 .site-nav a:hover,
-.site-nav a:focus {
+.site-nav a:focus-visible {
   text-decoration: underline;
 }
+.site-nav a[aria-current="true"] { text-decoration: underline; text-decoration-thickness: 2px; }
 
 .data-banner {
   display: none;
@@ -324,6 +357,20 @@ tfoot td {
   .page-header h1 {
     font-size: 1.4rem;
   }
+
+  /* Phone nav: one swipeable row with a fade at the edge, tap targets 44px tall. */
+  .site-nav-inner {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+    padding-top: 0;
+    padding-bottom: 0;
+    -webkit-mask-image: linear-gradient(to right, #000 85%, transparent);
+            mask-image: linear-gradient(to right, #000 85%, transparent);
+  }
+  .site-nav-inner::-webkit-scrollbar { display: none; }
+  .site-nav a { display: inline-flex; align-items: center; min-height: 44px; }
+  .site-nav a.nav-cta { min-height: 34px; margin: 5px 0; }
 }
 
 /* ===== START: Enter Data page (inputs.html) ===== */
@@ -397,8 +444,8 @@ tfoot td {
 .in-tab.is-active { color: var(--color-navy); border-bottom-color: var(--color-navy); }
 
 .in-day-bar { display: flex; gap: var(--space-sm); align-items: center; margin-bottom: var(--space-md); padding: var(--space-sm); }
-.in-day-bar select { flex: 1; min-width: 0; font: inherit; font-size: 1rem; padding: 0.5rem; border: 1px solid var(--color-border); border-radius: 8px; background: #fff; }
-.in-day-bar .btn { font-size: 1.2rem; padding: 0.35rem 0.8rem; }
+.in-day-bar select { flex: 1; min-width: 0; min-height: 44px; font: inherit; font-size: 1rem; padding: 0.5rem; border: 1px solid var(--color-border); border-radius: 8px; background: #fff; }
+.in-day-bar .btn { color: var(--color-navy); }
 .in-day-summary { margin-bottom: var(--space-sm); }
 
 .in-groups { display: grid; gap: var(--space-md); }
@@ -492,7 +539,24 @@ tfoot td {
 .sched-hl { font-weight: 700; color: var(--color-navy); }
 /* ===== END: Schedule section ===== */
 
-/* Square sync bar (Enter Data → Game Days) */
-.in-square { display: flex; gap: 1rem; align-items: center; justify-content: space-between; flex-wrap: wrap; }
-.in-square-text { margin: 0 0 0.25rem; font-weight: 600; }
-.in-square-text.is-error { color: var(--color-error-text, #b42318); }
+/* Enter Data: game-night header pieces */
+.btn-icon { display: inline-flex; align-items: center; justify-content: center; min-width: 44px; min-height: 44px; padding: 0; }
+.btn-small { font-size: 0.85rem; padding: 0.35rem 0.75rem; min-height: 36px; }
+.nav-back { display: inline-flex; align-items: center; gap: 0.35rem; }
+.in-day-line { margin: 0 0 var(--space-sm); font-size: 0.95rem; font-variant-numeric: tabular-nums; }
+.in-day-line-note { color: var(--color-muted); font-size: 0.85rem; }
+.in-square { display: flex; gap: var(--space-sm) var(--space-md); align-items: center; justify-content: space-between; flex-wrap: wrap;
+  margin: 0 0 var(--space-md); padding: var(--space-xs) var(--space-sm) var(--space-xs) var(--space-md);
+  background: var(--color-info-bg); border: 1px solid var(--color-info-border); border-radius: 8px; }
+.in-square-text { margin: 0; font-size: 0.88rem; flex: 1 1 18rem; }
+.in-square-text.is-error { color: var(--color-negative); font-weight: 600; }
+.in-noconc { margin: 0; }
+.in-remember { display: inline-flex; align-items: center; gap: 0.5rem; min-height: 36px; }
+.in-remember input { width: 1.15rem; height: 1.15rem; }
+@media (max-width: 560px) {
+  .in-tabs { -webkit-mask-image: linear-gradient(to right, #000 82%, transparent); mask-image: linear-gradient(to right, #000 82%, transparent); scrollbar-width: none; }
+  .in-tabs::-webkit-scrollbar { display: none; }
+  .in-tab { min-height: 44px; }
+  .in-bool-label { min-height: 44px; }
+  .page-header { margin-bottom: var(--space-lg); }
+}
